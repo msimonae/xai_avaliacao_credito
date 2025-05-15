@@ -18,13 +18,13 @@ feature_names = [
 
 # Carregar os modelos e dados de treino
 try:
-    scaler = joblib.load('/content/drive/MyDrive/Colab Notebooks/TCC/scaler.pkl')
-    lr_model = joblib.load('/content/drive/MyDrive/Colab Notebooks/TCC/modelo_regressao.pkl') # Assumindo que é um modelo XGBoost ou similar
+    scaler = joblib.load('scaler.pkl')
+    lr_model = joblib.load('modelo_regressao.pkl') # Assumindo que é um modelo XGBoost ou similar
 
     # Carregar dados de treino (não escalados) para o Anchor e potencialmente SHAP (background)
     # Se X_train.pkl já é um DataFrame com as colunas corretas, ótimo.
     # Se for um array NumPy, precisa ter as colunas na mesma ordem de feature_names.
-    X_train_raw = joblib.load('/content/drive/MyDrive/Colab Notebooks/TCC/X_train.pkl')
+    X_train_raw = joblib.load('X_train.pkl')
     if isinstance(X_train_raw, np.ndarray):
         X_train_df = pd.DataFrame(X_train_raw, columns=feature_names)
     elif isinstance(X_train_raw, pd.DataFrame):
@@ -44,7 +44,7 @@ try:
         st.stop()
 
     # Carregar dados de treino escalados (para SHAP LinearExplainer, se aplicável)
-    # X_train_scaled_raw = joblib.load('/content/drive/MyDrive/Colab Notebooks/TCC/X_train_scaled.pkl')
+    # X_train_scaled_raw = joblib.load('X_train_scaled.pkl')
     # if isinstance(X_train_scaled_raw, np.ndarray):
     #     X_train_scaled_df = pd.DataFrame(X_train_scaled_raw, columns=feature_names)
     # else:

@@ -211,29 +211,21 @@ if st.button("Verificar Crédito"):
         st.warning(f"Não foi possível gerar a explicação Anchor: {e}")
 
     # ------------------- Feedback do LLM -------------------   
-        prompt = f"""
-Você é um especialista em Machine Learning e XAI.
-Com base nas explicações de SHAP, LIME, ELI5 e Anchor abaixo, escreva um feedback claro e amigável ao cliente
-sobre os motivos do resultado e recomendações para aumentar as chances de aprovação futura.
 
-Explicações:
-{exp_rec}
-"""
+         prompt = f"""
+ Você é um analista de crédito sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
+ O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
+ Abaixo estão as explicações técnicas de diferentes ferramentas de XAI (Explainable AI) sobre os fatores que mais influenciaram essa decisão.
 
-#         prompt = f"""
-# Você é um analista de crédito sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
-# O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
-# Abaixo estão as explicações técnicas de diferentes ferramentas de XAI (Explainable AI) sobre os fatores que mais influenciaram essa decisão.
+ Resumo das Explicações Técnicas:
+ {exp_rec}
 
-# Resumo das Explicações Técnicas:
-# {exp_rec}
-
-# Sua tarefa é criar um feedback para o cliente em duas partes:
-# 1.  **Análise do Resultado:** De forma amigável, explique em 2-3 frases os principais motivos que levaram à decisão de '{resultado_texto}', baseando-se nos fatores mais recorrentes nas explicações. Não use jargões técnicos como SHAP, LIME ou "features". Fale sobre "pontos positivos", "pontos a melhorar", "seu perfil financeiro", etc.
-# 2.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
-
-# Seja direto, empático e construtivo.
-# """
+ Sua tarefa é criar um feedback para o cliente em duas partes:
+ 1.  **Análise do Resultado:** De forma amigável, explique em 4-5 frases os principais motivos que levaram à decisão de '{resultado_texto}', baseando-se nos fatores mais recorrentes nas explicações. Não use jargões técnicos como SHAP, LIME ou "features". Fale sobre "pontos positivos", "pontos a melhorar", "seu perfil financeiro", etc.
+ 2.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça 4 ou 5 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
+ 3. Se o crédito for aprovado, apenas dê os parabéns pela aprovação de crédito
+ Seja direto, empático e construtivo.
+ """
         try:
             with st.spinner("Gerando feedback personalizado..."):
                 resp = client.chat.completions.create(

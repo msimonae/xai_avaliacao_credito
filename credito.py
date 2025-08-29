@@ -33,7 +33,8 @@ except Exception as e:
     st.stop()
 
 # ------------------- OpenAI Key -------------------
-OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+#OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+OPENAI_API_KEY = st.secrets("OPENAI_API_KEY")
 if OPENAI_API_KEY:
     openai.api_key = OPENAI_API_KEY
 else:

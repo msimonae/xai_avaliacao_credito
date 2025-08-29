@@ -114,14 +114,12 @@ if st.button("Verificar Crédito"):
     # ------------------- SHAP -------------------
     try:
         st.markdown("**Explicação com SHAP (Impacto das Features na Predição Atual):**")
-        # Usar KernelExplainer para modelos de regressão logística, que é mais genérico
-        explainer = shap.KernelExplainer(lr_model.predict_proba, shap.sample(X_train_scaled, 100))
-        shap_values = explainer.shap_values(X_input_scaled)
-        
-        # Para classificação binária, shap_values[1] refere-se à classe 'Aprovado'
+        explainer = shap.TreeExplainer(lr_model)
+        sv_scaled = explainer(X_input_scaled_df)
+
         sv_plot = shap.Explanation(
-            values=shap_values[1][0],
-            base_values=explainer.expected_value[1],
+            values=sv_scaled.values[0],
+            base_values=sv_scaled.base_values[0],
             data=X_input_df.iloc[0].values,
             feature_names=feature_names
         )
@@ -130,72 +128,66 @@ if st.button("Verificar Crédito"):
         shap.plots.waterfall(sv_plot, show=False, max_display=10)
         st.pyplot(fig_waterfall)
         plt.close(fig_waterfall)
-        
-        contribs = shap_values[1][0]
+
+        contribs = sv_scaled.values[0]
         if y_pred == 0:
-            idx = np.argsort(contribs)[:3] # Piores contribuições para aprovação
+            idx = np.argsort(contribs)[:3]
             st.write("**Principais fatores que influenciaram a recusa:**")
         else:
-            idx = np.argsort(contribs)[::-1][:3] # Melhores contribuições para aprovação
+            idx = np.argsort(contribs)[-3:]
             st.write("**Principais fatores que influenciaram a aprovação:**")
 
         razoes_shap = [
-            f"{feature_names[j]} (valor: {X_input_df.iloc[0, j]}, contribuição SHAP: {contribs[j]:.2f})"
+            f"{feature_names[j]} (contribuição SHAP: {contribs[j]:.2f}, valor: {X_input_df.iloc[0, j]})"
             for j in idx
         ]
         for r in razoes_shap:
             st.markdown(f"- {r}")
+
         exp_rec += f"Principais fatores (SHAP): {razoes_shap}\n"
 
     except Exception as e:
-        st.warning(f"Não foi possível gerar a explicação SHAP: {e}")
+        st.warning(f"Não foi possível gerar SHAP: {e}")
 
     # ------------------- LIME -------------------
     try:
-        st.markdown("**Explicação com LIME (Fatores Locais):**")
         lime_explainer = lime.lime_tabular.LimeTabularExplainer(
             training_data=X_train_df.values,
             feature_names=feature_names,
             class_names=['Recusado', 'Aprovado'],
             mode='classification'
         )
-        # LIME espera a função de predição, não o modelo em si
-        predict_fn_lime = lambda x: lr_model.predict_proba(scaler.transform(pd.DataFrame(x, columns=feature_names)))
-        
         lime_exp = lime_explainer.explain_instance(
             X_input_df.values[0],
-            predict_fn_lime,
-            num_features=5,
-            labels=(1,) # Focar na explicação para 'Aprovado'
+            lambda x: lr_model.predict_proba(scaler.transform(pd.DataFrame(x, columns=feature_names))),
+            num_features=5
         )
-        
-        lime_features = [f for f, w in lime_exp.as_list(label=1)]
-        st.write(f"**LIME – Principais fatores para o resultado:** {lime_features}")
+        lime_features = [f for f, _ in lime_exp.as_list()]
+        st.write(f"**LIME – Principais fatores:** {lime_features}")
         exp_rec += f"Principais fatores (LIME): {lime_features}\n"
-        
-        st.components.v1.html(lime_exp.as_html(label=1), height=250, scrolling=True)
 
+        st.markdown("**Detalhe LIME:**")
+        st.components.v1.html(lime_exp.as_html(), height=420, scrolling=True)
     except Exception as e:
-        st.warning(f"Não foi possível gerar a explicação LIME: {e}")
+        st.warning(f"Não foi possível gerar LIME: {e}")
 
     # ------------------- ELI5 -------------------
     try:
-        st.markdown("**Explicação com ELI5 (Pesos das Features):**")
-        # ELI5 para modelos scikit-learn funciona melhor com dados não escalados
-        eli5_expl = eli5.explain_prediction(lr_model, X_input_scaled[0], feature_names=feature_names, target_names=['Recusado', 'Aprovado'])
-        
+        eli5_expl = eli5.explain_prediction(lr_model, X_input_df.iloc[0], feature_names=feature_names)
         eli5_neg = [w.feature for w in eli5_expl.targets[0].feature_weights.neg]
         eli5_pos = [w.feature for w in eli5_expl.targets[0].feature_weights.pos]
-        st.write(f"**ELI5 – Fatores positivos para aprovação:** {eli5_pos}")
-        st.write(f"**ELI5 – Fatores negativos para aprovação:** {eli5_neg}")
-        exp_rec += f"ELI5 positivos: {eli5_pos}, negativos: {eli5_neg}\n"
-        
+        st.write(f"**ELI5 – Negativos:** {eli5_neg}")
+        st.write(f"**ELI5 – Positivos:** {eli5_pos}")
+        exp_rec += f"ELI5 negativos: {eli5_neg}, positivos: {eli5_pos}\n"
+
+        st.markdown("**Detalhe ELI5:**")
         html_eli5 = format_as_html(eli5_expl)
-        st.components.v1.html(html_eli5, height=350, scrolling=True)
-
+        st.components.v1.html(html_eli5, height=420, scrolling=True)
     except Exception as e:
-        st.warning(f"Não foi possível gerar a explicação ELI5: {e}")
+        st.warning(f"Não foi possível gerar ELI5: {e}")
 
+
+    
     # ------------------- Anchor -------------------
     try:
         st.markdown("**Explicação com Anchor (Regras Mínimas):**")

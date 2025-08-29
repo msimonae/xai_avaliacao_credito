@@ -223,7 +223,7 @@ if st.button("Verificar Crédito"):
  Sua tarefa é criar um feedback para o cliente em duas partes:
  1.  **Análise do Resultado:** De forma amigável, explique em 4-5 frases os principais motivos que levaram à decisão de '{resultado_texto}', baseando-se nos fatores mais recorrentes nas explicações. Não use jargões técnicos como SHAP, LIME ou "features". Fale sobre "pontos positivos", "pontos a melhorar", "seu perfil financeiro", etc.
  2.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça 4 ou 5 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
- 3. Se o crédito for aprovado, apenas dê os parabéns pela aprovação de crédito
+ 3.  **Se o crédito for aprovado, apenas dê os parabéns pela aprovação de crédito
  Seja direto, empático e construtivo.
  """
         try:

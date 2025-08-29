@@ -38,16 +38,15 @@ try:
     lr_model = joblib.load('modelo_regressao.pkl')
     X_train_scaled = joblib.load('X_train_scaled.pkl')
     X_train_raw = joblib.load('X_train.pkl')
-    
-    # Garantir que X_train_df seja um DataFrame com as colunas corretas
     if isinstance(X_train_raw, np.ndarray):
         X_train_df = pd.DataFrame(X_train_raw, columns=feature_names)
     else:
-        # Assegura que o dataframe de treino tenha a mesma ordem de colunas
-        X_train_df = X_train_raw[feature_names]
-
+        if list(X_train_raw.columns) != feature_names:
+            X_train_df = X_train_raw[feature_names]
+        else:
+            X_train_df = X_train_raw
 except Exception as e:
-    st.error(f"Erro ao carregar modelos ou arquivos de dados: {e}")
+    st.error(f"Erro ao carregar modelos/dados: {e}")
     st.stop()
 
 # --- REMOÇÃO: Bloco de código redundante e incorreto ---

@@ -37,7 +37,7 @@ OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 if OPENAI_API_KEY:
     openai.api_key = OPENAI_API_KEY
 else:
-    st.warning(⚠️ OPENAI_API_KEY não configurada. O feedback do LLM será pulado.")
+    st.warning("⚠️ OPENAI_API_KEY não configurada. O feedback do LLM será pulado.")
 
 # ------------------- UI -------------------
 st.title("Previsão de Crédito e Explicabilidade (SHAP • LIME • ELI5 • Anchor)")

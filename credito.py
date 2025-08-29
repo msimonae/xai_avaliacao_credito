@@ -4,7 +4,7 @@ from anchor import anchor_tabular
 import lime.lime_tabular
 import eli5
 from eli5 import format_as_html
-import openai
+from openai import OpenAI
 
 st.set_page_config(page_title="Crédito com XAI", layout="wide")
 
@@ -205,7 +205,9 @@ Explicações:
 {exp_rec}
 """
         try:
-            resp = openai.ChatCompletion.create(
+            client = OpenAI(api_key=OPENAI_API_KEY)
+
+            resp = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "Você é um especialista em explicabilidade de crédito."},

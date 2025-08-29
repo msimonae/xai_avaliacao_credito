@@ -49,11 +49,7 @@ except Exception as e:
     st.error(f"Erro ao carregar modelos/dados: {e}")
     st.stop()
 
-# --- REMOÇÃO: Bloco de código redundante e incorreto ---
-# O bloco que continha `openai.api_key = OPENAI_API_KEY` foi removido.
-# A inicialização do cliente já foi feita no início do script.
-
-# ------------------- UI (Interface do Usuário) -------------------
+# ------------------- UI -------------------
 st.title("Previsão de Crédito e Explicabilidade (SHAP • LIME • ELI5 • Anchor)")
 
 ufs = ['SP', 'MG', 'SC', 'PR', 'RJ']
@@ -70,14 +66,14 @@ with col1:
     CASA_PROPRIA = st.radio('Casa Própria?', ['Sim', 'Não'], index=0)
 with col2:
     QT_IMOVEIS = st.number_input('Qtd. Imóveis', min_value=0, value=1)
-    VL_IMOVEIS = st.number_input('Valor dos Imóveis (R$)', min_value=0.0, value=300000.0, step=1000.0, format="%.2f")
+    VL_IMOVEIS = st.number_input('Valor dos Imóveis (R$)', min_value=0.0, value=300000.0, step=1000.0)
     OUTRA_RENDA = st.radio('Outra renda?', ['Sim', 'Não'], index=1)
-    OUTRA_RENDA_VALOR = st.number_input('Valor Outra Renda (R$)', min_value=0.0, value=3000.0, step=100.0, format="%.2f") if OUTRA_RENDA == 'Sim' else 0.0
+    OUTRA_RENDA_VALOR = st.number_input('Valor Outra Renda (R$)', min_value=0.0, value=3000.0, step=100.0) if OUTRA_RENDA == 'Sim' else 0.0
     TEMPO_ULTIMO_EMPREGO_MESES = st.slider('Tempo Últ. Emprego (meses)', 0, 240, 18)
 with col3:
     TRABALHANDO_ATUALMENTE = st.checkbox('Trabalhando atualmente?', value=True)
-    ULTIMO_SALARIO = st.number_input('Último Salário (R$)', min_value=0.0, value=20400.0, step=100.0, format="%.2f")
-    QT_CARROS_input = st.number_input('Qtd. Carros', min_value=0, max_value=10, value=1) # Simplificado para number_input
+    ULTIMO_SALARIO = st.number_input('Último Salário (R$)', min_value=0.0, value=20400.0, step=100.0)
+    QT_CARROS_input = st.multiselect('Qtd. Carros', [0,1,2,3,4,5], default=[1])
     VALOR_TABELA_CARROS = st.slider('Valor Tabela Carros (R$)', 0, 200000, 60000, step=5000)
     FAIXA_ETARIA = st.radio('Faixa Etária', faixas_etarias, index=2)
 
@@ -92,23 +88,25 @@ if st.button("Verificar Crédito"):
         uf_map[UF], escolaridade_map[ESCOLARIDADE], estado_civil_map[ESTADO_CIVIL], QT_FILHOS,
         1 if CASA_PROPRIA == 'Sim' else 0, QT_IMOVEIS, VL_IMOVEIS,
         1 if OUTRA_RENDA == 'Sim' else 0, OUTRA_RENDA_VALOR, TEMPO_ULTIMO_EMPREGO_MESES,
-        1 if TRABALHANDO_ATUALMENTE else 0, ULTIMO_SALARIO, QT_CARROS_input, # Usando o valor do number_input
+        1 if TRABALHANDO_ATUALMENTE else 0, ULTIMO_SALARIO, len(QT_CARROS_input),
         VALOR_TABELA_CARROS, faixa_etaria_map[FAIXA_ETARIA]
     ]
 
+    # ✅ Correção: reconstruir X_input_df e X_input_scaled
     X_input_df = pd.DataFrame([novos_dados], columns=feature_names)
     X_input_scaled = scaler.transform(X_input_df)
-    
+    X_input_scaled_df = pd.DataFrame(X_input_scaled, columns=feature_names)
+
     # Predição
     y_pred = lr_model.predict(X_input_scaled)[0]
-    proba = lr_model.predict_proba(X_input_scaled)[0][1] # Probabilidade da classe 1 (Aprovado)
+    proba = getattr(lr_model, "predict_proba", lambda x: np.array([[1,0]]))(X_input_scaled)[0][1]
     resultado_texto = 'Aprovado' if y_pred == 1 else 'Recusado'
     cor = 'green' if y_pred == 1 else 'red'
-    
     st.markdown(f"### Resultado: <span style='color:{cor}; font-weight:700'>{resultado_texto}</span>", unsafe_allow_html=True)
     st.write(f"Probabilidade de Aprovação: **{proba:.2%}**")
 
     exp_rec = ""  # acumulador para explicações
+
 
     # ------------------- SHAP -------------------
     try:

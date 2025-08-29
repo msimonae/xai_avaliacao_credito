@@ -211,7 +211,8 @@ if st.button("Verificar Crédito"):
         st.warning(f"Não foi possível gerar a explicação Anchor: {e}")
 
     # ------------------- Feedback do LLM -------------------   
-
+    # Usa o cliente 'client' que foi criado no início
+    if client:
          prompt = f"""
  Você é um analista de crédito sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
  O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.

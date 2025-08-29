@@ -210,9 +210,8 @@ if st.button("Verificar Crédito"):
     except Exception as e:
         st.warning(f"Não foi possível gerar a explicação Anchor: {e}")
 
-    # ------------------- Feedback do LLM -------------------
-    # Usa o cliente 'client' que foi criado no início
-    if client:
+    # ------------------- Feedback do LLM -------------------   
+        prompt = f"""
 Você é um especialista em Machine Learning e XAI.
 Com base nas explicações de SHAP, LIME, ELI5 e Anchor abaixo, escreva um feedback claro e amigável ao cliente
 sobre os motivos do resultado e recomendações para aumentar as chances de aprovação futura.

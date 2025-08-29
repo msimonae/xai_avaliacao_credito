@@ -216,6 +216,7 @@ if st.button("Verificar Crédito"):
         prompt = f"""
 Você é um analista de crédito sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
 O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
+Com base nas explicações de SHAP, LIME, ELI5 e Anchor abaixo, escreva um feedback claro e amigável ao cliente sobre os motivos do resultado e recomendações para aumentar as chances de aprovação futura.
 Abaixo estão as explicações técnicas de diferentes ferramentas de XAI (Explainable AI) sobre os fatores que mais influenciaram essa decisão.
 
 Resumo das Explicações Técnicas:

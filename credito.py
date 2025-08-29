@@ -223,7 +223,7 @@ Resumo das Explicações Técnicas:
 {exp_rec}
 
 Sua tarefa é criar um feedback para o cliente em duas partes:
-1.  **Análise do Resultado:** De forma amigável, explique em 2-3 frases os principais motivos que levaram à decisão de '{resultado_texto}', baseando-se nos fatores mais recorrentes nas explicações. Use os valores gerados no SHAP, LIME, ELI3 e Anchor. Fale sobre "pontos positivos", "pontos a melhorar", "seu perfil financeiro", etc.
+1.  **Análise do Resultado:** De forma amigável, explique em 3-5 frases os principais motivos que levaram à decisão de '{resultado_texto}', baseando-se nos fatores mais recorrentes nas explicações. Use os valores gerados no SHAP, LIME, ELI3 e Anchor. Fale sobre "pontos positivos", "pontos a melhorar", "seu perfil financeiro", etc.
 2.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
 
 Seja direto, empático e construtivo.
@@ -236,8 +236,8 @@ Seja direto, empático e construtivo.
                         {"role": "system", "content": "Você é um analista de crédito sênior e especialista em comunicação com clientes."},
                         {"role": "user", "content": prompt},
                     ],
-                    temperature=0.2,
-                    max_tokens=400
+                    temperature=0.1,
+                    max_tokens=500
                 )
                 st.markdown("### 🔍 Feedback do Especialista")
                 # --- CORREÇÃO: Acessar o conteúdo da resposta da API ---

@@ -50,7 +50,7 @@ except Exception as e:
     st.stop()
 
 # ------------------- UI -------------------
-st.title("Previsão de Crédito e Explicabilidade (SHAP • LIME • ELI5 • Anchor)")
+st.title("Previsão de Crédito e Explicabilidade (XAI)")
 
 ufs = ['SP', 'MG', 'SC', 'PR', 'RJ']
 escolaridades = ['Superior Cursando', 'Superior Completo', 'Segundo Grau Completo']

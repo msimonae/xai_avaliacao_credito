@@ -75,10 +75,18 @@ with col2:
         VL_IMOVEIS = 0.0
 
     OUTRA_RENDA = st.radio('Outra renda?', ['Sim', 'Não'], index=1)
-    OUTRA_RENDA_VALOR = st.number_input(
-        'Valor Outra Renda (R$)', min_value=0.0, value=3000.0, step=100.0
-    ) if OUTRA_RENDA == 'Sim' else 0.0
+
+    # ✅ Alterado para text_input, sem botões - e +
+    OUTRA_RENDA_VALOR = 0.0
+    if OUTRA_RENDA == 'Sim':
+        OUTRA_RENDA_VALOR_str = st.text_input('Valor Outra Renda (R$)', value="3000")
+        try:
+            OUTRA_RENDA_VALOR = float(OUTRA_RENDA_VALOR_str.replace("R$", "").replace(".", "").replace(",", "."))
+        except:
+            OUTRA_RENDA_VALOR = 0.0
+
     TEMPO_ULTIMO_EMPREGO_MESES = st.slider('Tempo Últ. Emprego (meses)', 0, 240, 18)
+
 with col3:
     TRABALHANDO_ATUALMENTE = st.checkbox('Trabalhando atualmente?', value=True)
 
@@ -92,6 +100,7 @@ with col3:
     QT_CARROS_input = st.multiselect('Qtd. Carros', [0,1,2,3,4,5], default=[1])
     VALOR_TABELA_CARROS = st.slider('Valor Tabela Carros (R$)', 0, 200000, 60000, step=5000)
     FAIXA_ETARIA = st.radio('Faixa Etária', faixas_etarias, index=2)
+
 
 if st.button("Verificar Crédito"):
     # ------------------- Montar dados do input -------------------

@@ -255,7 +255,7 @@ Resumo das Explicações Técnicas:
 {exp_rec}
 
 Sua tarefa é criar um feedback para o cliente em duas partes:
-1.  **Análise do Resultado:** De forma amigável, explique em 3-5 frases os principais motivos que levaram à decisão de '{resultado_texto}', baseando-se nos fatores mais recorrentes nas explicações. 
+1.  **Análise do Resultado:** De forma amigável, explique em 3-5 frases os principais motivos que levaram à decisão de '{resultado_texto}', baseando-se nos fatores mais importantes nas explicações e escrever de maneira compreensível sem concatenar as palavras. 
 2.  **Use os resultados gerados no SHAP, LIME, ELI3 e Anchor e coloque o "R$" antes dos resultados de valores de valor dos seus imóveis, salário e carros. 
 3.  **Fale sobre "pontos positivos", "pontos a melhorar", "seu perfil financeiro", etc.
 2.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.

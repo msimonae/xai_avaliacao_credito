@@ -88,7 +88,9 @@ with col2:
     TEMPO_ULTIMO_EMPREGO_MESES = st.slider('Tempo Últ. Emprego (meses)', 0, 240, 18)
 
 with col3:
-    TRABALHANDO_ATUALMENTE = st.checkbox('Trabalhando atualmente?', value=True)
+    # Substituição: Radio no lugar de Checkbox, igual ao campo "Outra renda?"
+    TRABALHANDO_ATUALMENTE = st.radio('Trabalhando atualmente?', ['Sim', 'Não'], index=0)
+    TRABALHANDO_ATUALMENTE = 1 if TRABALHANDO_ATUALMENTE == 'Sim' else 0
 
     # Substituição: Text Input editável para último salário
     ULTIMO_SALARIO_str = st.text_input('Último Salário (R$)', value="20400")

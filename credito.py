@@ -66,13 +66,29 @@ with col1:
     CASA_PROPRIA = st.radio('Casa Própria?', ['Sim', 'Não'], index=0)
 with col2:
     QT_IMOVEIS = st.number_input('Qtd. Imóveis', min_value=0, value=1)
-    VL_IMOVEIS = st.number_input('Valor dos Imóveis (R$)', min_value=0.0, value=300000.0, step=1000.0)
+
+    # Substituição: Text Input editável para valores monetários
+    VL_IMOVEIS_str = st.text_input('Valor dos Imóveis (R$)', value="300000")
+    try:
+        VL_IMOVEIS = float(VL_IMOVEIS_str.replace("R$", "").replace(".", "").replace(",", "."))
+    except:
+        VL_IMOVEIS = 0.0
+
     OUTRA_RENDA = st.radio('Outra renda?', ['Sim', 'Não'], index=1)
-    OUTRA_RENDA_VALOR = st.number_input('Valor Outra Renda (R$)', min_value=0.0, value=3000.0, step=100.0) if OUTRA_RENDA == 'Sim' else 0.0
+    OUTRA_RENDA_VALOR = st.number_input(
+        'Valor Outra Renda (R$)', min_value=0.0, value=3000.0, step=100.0
+    ) if OUTRA_RENDA == 'Sim' else 0.0
     TEMPO_ULTIMO_EMPREGO_MESES = st.slider('Tempo Últ. Emprego (meses)', 0, 240, 18)
 with col3:
     TRABALHANDO_ATUALMENTE = st.checkbox('Trabalhando atualmente?', value=True)
-    ULTIMO_SALARIO = st.number_input('Último Salário (R$)', min_value=0.0, value=20400.0, step=100.0)
+
+    # Substituição: Text Input editável para último salário
+    ULTIMO_SALARIO_str = st.text_input('Último Salário (R$)', value="20400")
+    try:
+        ULTIMO_SALARIO = float(ULTIMO_SALARIO_str.replace("R$", "").replace(".", "").replace(",", "."))
+    except:
+        ULTIMO_SALARIO = 0.0
+
     QT_CARROS_input = st.multiselect('Qtd. Carros', [0,1,2,3,4,5], default=[1])
     VALOR_TABELA_CARROS = st.slider('Valor Tabela Carros (R$)', 0, 200000, 60000, step=5000)
     FAIXA_ETARIA = st.radio('Faixa Etária', faixas_etarias, index=2)

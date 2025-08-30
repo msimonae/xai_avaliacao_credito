@@ -88,15 +88,20 @@ with col2:
     TEMPO_ULTIMO_EMPREGO_MESES = st.slider('Tempo Últ. Emprego (meses)', 0, 240, 18)
 
 with col3:
-    # Substituição: Radio no lugar de Checkbox, igual ao campo "Outra renda?"
+    # Radio no lugar do checkbox, igual ao campo "Outra renda?"
     TRABALHANDO_ATUALMENTE = st.radio('Trabalhando atualmente?', ['Sim', 'Não'], index=0)
-    TRABALHANDO_ATUALMENTE = 1 if TRABALHANDO_ATUALMENTE == 'Sim' else 0
+    trabalhando_flag = 1 if TRABALHANDO_ATUALMENTE == 'Sim' else 0
 
-    # Substituição: Text Input editável para último salário
-    ULTIMO_SALARIO_str = st.text_input('Último Salário (R$)', value="20400")
-    try:
-        ULTIMO_SALARIO = float(ULTIMO_SALARIO_str.replace("R$", "").replace(".", "").replace(",", "."))
-    except:
+    # ✅ Mostrar "Último Salário" só se a pessoa estiver trabalhando
+    if TRABALHANDO_ATUALMENTE == 'Sim':
+        ULTIMO_SALARIO_str = st.text_input('Último Salário (R$)', value="20400")
+        try:
+            ULTIMO_SALARIO = float(
+                ULTIMO_SALARIO_str.replace("R$", "").replace(".", "").replace(",", ".")
+            )
+        except:
+            ULTIMO_SALARIO = 0.0
+    else:
         ULTIMO_SALARIO = 0.0
 
     QT_CARROS_input = st.multiselect('Qtd. Carros', [0,1,2,3,4,5], default=[1])

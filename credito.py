@@ -273,7 +273,7 @@ Seja direto, empático e construtivo.
                     temperature=0.1,
                     max_tokens=500
                 )
-                st.markdown("### 🔍 Feedback do Especialista")
+                st.markdown("### 🔍 Feedback do Especialista feito por LLM")
                 # --- CORREÇÃO: Acessar o conteúdo da resposta da API ---
                 feedback_content = resp.choices[0].message.content
                 st.write(feedback_content)

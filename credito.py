@@ -79,7 +79,7 @@ with col2:
     # ✅ Alterado para text_input, sem botões - e +
     OUTRA_RENDA_VALOR = 0.0
     if OUTRA_RENDA == 'Sim':
-        OUTRA_RENDA_VALOR_str = st.text_input('Valor Outra Renda (R$)', value="3000")
+        OUTRA_RENDA_VALOR_str = st.text_input('Valor Outra Renda (R$)', value="2000")
         try:
             OUTRA_RENDA_VALOR = float(OUTRA_RENDA_VALOR_str.replace("R$", "").replace(".", "").replace(",", "."))
         except:
@@ -105,7 +105,7 @@ with col3:
         ULTIMO_SALARIO = 0.0
 
     QT_CARROS_input = st.multiselect('Qtd. Carros', [0,1,2,3,4,5], default=[1])
-    VALOR_TABELA_CARROS = st.slider('Valor Tabela Carros (R$)', 0, 200000, 60000, step=5000)
+    VALOR_TABELA_CARROS = st.slider('Valor Tabela Carros (R$)', 0, 200000, 45000, step=5000)
     FAIXA_ETARIA = st.radio('Faixa Etária', faixas_etarias, index=2)
 
 

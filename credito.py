@@ -173,7 +173,7 @@ if st.button("Verificar Crédito"):
         for r in razoes_shap:
             st.markdown(f"- {r}")
 
-        exp_rec += f"Principais fatores (SHAP): {razoes_shap}\n"
+        #exp_rec += f"Principais fatores (SHAP): {razoes_shap}\n"
 
     except Exception as e:
         st.warning(f"Não foi possível gerar SHAP: {e}")

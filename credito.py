@@ -193,7 +193,7 @@ if st.button("Verificar Crédito"):
         )
         lime_features = [f for f, _ in lime_exp.as_list()]
         st.write(f"**LIME – Principais fatores:** {lime_features}")
-        exp_rec += f"Principais fatores (LIME): {lime_features}\n"
+        #exp_rec += f"Principais fatores (LIME): {lime_features}\n"
 
         st.markdown("**Detalhe LIME:**")
         st.components.v1.html(lime_exp.as_html(), height=420, scrolling=True)
@@ -207,7 +207,7 @@ if st.button("Verificar Crédito"):
         eli5_pos = [w.feature for w in eli5_expl.targets[0].feature_weights.pos]
         st.write(f"**ELI5 – Negativos:** {eli5_neg}")
         st.write(f"**ELI5 – Positivos:** {eli5_pos}")
-        exp_rec += f"ELI5 negativos: {eli5_neg}, positivos: {eli5_pos}\n"
+        #exp_rec += f"ELI5 negativos: {eli5_neg}, positivos: {eli5_pos}\n"
 
         st.markdown("**Detalhe ELI5:**")
         html_eli5 = format_as_html(eli5_expl)
@@ -256,7 +256,7 @@ Resumo das Explicações Técnicas:
 
 Sua tarefa é criar um feedback para o cliente em duas partes:
 1.  **Análise do Resultado:** De forma amigável, explique em 3-5 frases os principais motivos que levaram à decisão de '{resultado_texto}', baseando-se nos fatores mais importantes nas explicações e escrever de maneira compreensível sem concatenar as palavras. 
-2.  **Use os resultados gerados no SHAP, LIME, ELI3 e Anchor e coloque o "R$" antes dos resultados de valores de valor dos seus imóveis, salário e carros. 
+2.  **Use os resultados gerados no SHAP e Anchor e coloque o "R$" antes dos resultados de valores de valor dos seus imóveis, salário e carros. 
 3.  **Fale sobre "pontos positivos", "pontos a melhorar", "seu perfil financeiro", etc.
 2.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
 

@@ -248,7 +248,7 @@ if st.button("Verificar Crédito"):
         prompt = f"""
 Você é um analista de crédito sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
 O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
-Com base nas explicações de SHAP, LIME, ELI5 e Anchor abaixo, escreva um feedback claro e amigável ao cliente sobre os motivos do resultado e recomendações para aumentar as chances de aprovação futura.
+Com base nas explicações de SHAP e Anchor abaixo, escreva um feedback claro e amigável ao cliente sobre os motivos do resultado e recomendações para aumentar as chances de aprovação futura.
 Abaixo estão as explicações técnicas de diferentes ferramentas de XAI (Explainable AI) sobre os fatores que mais influenciaram essa decisão.
 
 Resumo das Explicações Técnicas:
@@ -256,7 +256,7 @@ Resumo das Explicações Técnicas:
 
 Sua tarefa é criar um feedback para o cliente em duas partes:
 1.  **Análise do Resultado:** De forma amigável, explique em 3-5 frases os principais motivos que levaram à decisão de '{resultado_texto}', baseando-se nos fatores mais importantes nas explicações e escrever de maneira compreensível sem concatenar as palavras. 
-2.  **Use os resultados gerados no SHAP e Anchor e coloque o "R$" antes dos resultados de valores de valor dos seus imóveis, salário e carros. 
+2.  **Use os resultados gerados no SHAP e Anchor de todos os atributos necessários para aprovação e coloque o "R$" antes dos resultados de valores de valor dos seus imóveis, salário e carros. 
 3.  **Fale sobre "pontos positivos", "pontos a melhorar", "seu perfil financeiro", etc.
 2.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
 

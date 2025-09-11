@@ -68,7 +68,7 @@ with col2:
     QT_IMOVEIS = st.number_input('Qtd. Imóveis', min_value=0, value=1)
 
     # Substituição: Text Input editável para valores monetários
-    VL_IMOVEIS_str = st.text_input('Valor dos Imóveis (R$)', value="300000")
+    VL_IMOVEIS_str = st.text_input('Valor dos Imóveis (R$)', value="100000")
     try:
         VL_IMOVEIS = float(VL_IMOVEIS_str.replace("R$", "").replace(".", "").replace(",", "."))
     except:
@@ -85,7 +85,7 @@ with col2:
         except:
             OUTRA_RENDA_VALOR = 0.0
 
-    TEMPO_ULTIMO_EMPREGO_MESES = st.slider('Tempo Últ. Emprego (meses)', 0, 240, 18)
+    TEMPO_ULTIMO_EMPREGO_MESES = st.slider('Tempo Últ. Emprego (meses)', 0, 240, 5)
 
 with col3:
     # Radio no lugar do checkbox, igual ao campo "Outra renda?"
@@ -94,7 +94,7 @@ with col3:
 
     # ✅ Mostrar "Último Salário" só se a pessoa estiver trabalhando
     if TRABALHANDO_ATUALMENTE == 'Sim':
-        ULTIMO_SALARIO_str = st.text_input('Último Salário (R$)', value="20400")
+        ULTIMO_SALARIO_str = st.text_input('Último Salário (R$)', value="5400")
         try:
             ULTIMO_SALARIO = float(
                 ULTIMO_SALARIO_str.replace("R$", "").replace(".", "").replace(",", ".")

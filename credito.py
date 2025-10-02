@@ -19,42 +19,52 @@ def format_currency(value):
 # Função para humanizar as regras do LIME
 def get_humanized_lime_rules(lime_features):
     humanized_rules = []
+    
+    # Dicionário para traduzir nomes de features
+    feature_translations = {
+        'VL_IMOVEIS': 'o valor dos seus imóveis',
+        'VALOR_TABELA_CARROS': 'o valor de tabela dos seus carros',
+        'TEMPO_ULTIMO_EMPREGO_MESES': 'o seu tempo de último emprego',
+        'ULTIMO_SALARIO': 'o seu último salário',
+        'QT_CARROS': 'a quantidade de carros',
+    }
+
     for rule, contrib in lime_features:
-        # Extrai o nome da feature e os valores da regra
-        parts = rule.split(' ')
-        feature_name = parts[0]
+        # Padrão para regras com faixa de valores
+        match_range = re.search(r'([a-zA-Z_]+)\s*(?:[<=>]+)\s*(\S+)\s*(?:[<=>]+)\s*(\S+)', rule)
+        # Padrão para regras com um único valor
+        match_single = re.search(r'([a-zA-Z_]+)\s*(?:[<=>]+)\s*(\S+)', rule)
 
-        impact_text = "teve um impacto negativo" if contrib < 0 else "teve um impacto positivo"
+        rule_text = rule
+        impact = "negativo" if contrib < 0 else "positivo"
+
+        if match_range:
+            feature_name = match_range.group(1)
+            lower_val = float(match_range.group(2))
+            upper_val = float(match_range.group(3))
+            
+            translated_name = feature_translations.get(feature_name, feature_name)
+            
+            if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO']:
+                lower_val_str = format_currency(lower_val)
+                upper_val_str = format_currency(upper_val)
+                rule_text = f"Ter {translated_name} entre {lower_val_str} e {upper_val_str}"
+            else:
+                rule_text = f"Ter {translated_name} entre {lower_val} e {upper_val}"
+                
+        elif match_single:
+            feature_name = match_single.group(1)
+            value = float(match_single.group(2))
+            
+            translated_name = feature_translations.get(feature_name, feature_name)
+            
+            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS']:
+                 rule_text = f"Ter {translated_name} igual ou menor que {format_currency(value)}"
+            else:
+                rule_text = f"Ter {translated_name} igual ou menor que {value}"
         
-        # Humaniza a regra
-        if '<=' in rule and '>' in rule:
-            # Padrão: 0.00 < VL_IMOVEIS <= 185000.00
-            values = re.findall(r'(\d+\.?\d*)', rule)
-            lower_bound = float(values[0])
-            upper_bound = float(values[1])
-            if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO', 'OUTRA_RENDA_VALOR']:
-                humanized_rule = f"O valor de {feature_name} está entre {format_currency(lower_bound)} e {format_currency(upper_bound)}."
-            else:
-                humanized_rule = f"O valor de {feature_name} está entre {lower_bound} e {upper_bound}."
-        elif '<=' in rule:
-            # Padrão: TEMPO_ULTIMO_EMPREGO_MESES <= 14.00
-            value = float(re.search(r'<= (\d+\.?\d*)', rule).group(1))
-            humanized_rule = f"O valor de {feature_name} é igual ou menor que {value}."
-            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
-                humanized_rule = f"O valor de {feature_name} é igual ou menor que {format_currency(value)}."
-            else:
-                humanized_rule = f"O valor de {feature_name} é igual ou menor que {value}."
-        elif '>' in rule:
-            # Padrão: TEMPO_ULTIMO_EMPREGO_MESES > 14.00
-            value = float(re.search(r'> (\d+\.?\d*)', rule).group(1))
-            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
-                humanized_rule = f"O valor de {feature_name} é maior que {format_currency(value)}."
-            else:
-                humanized_rule = f"O valor de {feature_name} é maior que {value}."
-        else:
-            humanized_rule = rule
-
-        humanized_rules.append(f"{humanized_rule} {impact_text}.")
+        # Adiciona a regra humanizada e o impacto à lista
+        humanized_rules.append(f"{rule_text} teve um impacto {impact}.")
 
     return "\n".join(humanized_rules)
 

@@ -173,7 +173,7 @@ if st.button("Verificar Crédito"):
         for r in razoes_shap:
             st.markdown(f"- {r}")
 
-        #exp_rec += f"Principais fatores (SHAP): {razoes_shap}\n"
+        exp_rec += f"Principais fatores (SHAP): {razoes_shap}\n"
 
     except Exception as e:
         st.warning(f"Não foi possível gerar SHAP: {e}")
@@ -193,7 +193,7 @@ if st.button("Verificar Crédito"):
         )
         lime_features = [f for f, _ in lime_exp.as_list()]
         st.write(f"**LIME – Principais fatores:** {lime_features}")
-        #exp_rec += f"Principais fatores (LIME): {lime_features}\n"
+        exp_rec += f"Principais fatores (LIME): {lime_features}\n"
 
         st.markdown("**Detalhe LIME:**")
         st.components.v1.html(lime_exp.as_html(), height=420, scrolling=True)
@@ -207,7 +207,7 @@ if st.button("Verificar Crédito"):
         eli5_pos = [w.feature for w in eli5_expl.targets[0].feature_weights.pos]
         st.write(f"**ELI5 – Negativos:** {eli5_neg}")
         st.write(f"**ELI5 – Positivos:** {eli5_pos}")
-        #exp_rec += f"ELI5 negativos: {eli5_neg}, positivos: {eli5_pos}\n"
+        exp_rec += f"ELI5 negativos: {eli5_neg}, positivos: {eli5_pos}\n"
 
         st.markdown("**Detalhe ELI5:**")
         html_eli5 = format_as_html(eli5_expl)
@@ -246,7 +246,7 @@ if st.button("Verificar Crédito"):
     # Usa o cliente 'client' que foi criado no início
     if client:
         prompt = f"""
-Você é um analista de crédito sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
+Você é um Cientista de Dados Sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
 O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
 Com base nas explicações de SHAP e Anchor abaixo, escreva um feedback claro e amigável ao cliente sobre os motivos do resultado e recomendações para aumentar as chances de aprovação futura.
 Abaixo estão as explicações técnicas de diferentes ferramentas de XAI (Explainable AI) sobre os fatores que mais influenciaram essa decisão.
@@ -255,7 +255,7 @@ Resumo das Explicações Técnicas:
 {exp_rec}
 
 Sua tarefa é criar um feedback para o cliente em duas partes:
-1.  **Análise do Resultado:** De forma amigável, explique em 3-5 frases os principais motivos que levaram à decisão de '{resultado_texto}', baseando-se nos fatores mais importantes nas explicações e escrever de maneira compreensível sem concatenar as palavras. 
+1.  **Análise do Resultado:** De forma amigável, explique em 3-5 frases os principais motivos que levaram à decisão de '{resultado_texto}', baseando-se nos fatores mais importantes nas explicações e na âncora para obter a aprovação de crédito conforme a explicação do Anchor e escrever de maneira compreensível sem concatenar as palavras. 
 2.  **Use os resultados gerados no SHAP e Anchor de todos os atributos necessários para aprovação e coloque o "R$" antes dos resultados de valores de valor dos seus imóveis, salário e carros. 
 3.  **Fale sobre "pontos positivos", "pontos a melhorar", "seu perfil financeiro", etc.
 2.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.

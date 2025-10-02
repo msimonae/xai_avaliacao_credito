@@ -25,7 +25,7 @@ else:
 # ------------------- Carregar modelos/dados -------------------
 feature_names = [
     'UF', 'ESCOLARIDADE', 'ESTADO_CIVIL', 'QT_FILHOS', 'CASA_PROPRIA',
-    'QT_IMOVEIS', 'OUTRA_RENDA', 'OUTRA_RENDA_VALOR',
+    'QT_IMOVEIS', 'VL_IMOVEIS', 'OUTRA_RENDA', 'OUTRA_RENDA_VALOR',
     'TEMPO_ULTIMO_EMPREGO_MESES', 'TRABALHANDO_ATUALMENTE', 'ULTIMO_SALARIO',
     'QT_CARROS', 'VALOR_TABELA_CARROS', 'FAIXA_ETARIA'
 ]
@@ -116,6 +116,9 @@ if st.button("Verificar Crédito"):
         VALOR_TABELA_CARROS, faixa_etaria_map[FAIXA_ETARIA]
     ]
 
+    # A correção já foi feita na declaração da lista feature_names.
+    # O restante do código não precisa de alteração.
+    
     X_input_df = pd.DataFrame([novos_dados], columns=feature_names)
     X_input_scaled = scaler.transform(X_input_df)
     X_input_scaled_df = pd.DataFrame(X_input_scaled, columns=feature_names)
@@ -170,16 +173,12 @@ if st.button("Verificar Crédito"):
             else:
                 val_str = str(val)
 
-            # --- CORREÇÃO AQUI ---
-            # Adiciona a contribuição SHAP separadamente para o LLM
             razoes_shap_str.append({
                 "feature": feature_name,
                 "contrib_shap": f"{contrib:.2f}",
                 "valor_feature": val_str
             })
-            # --- FIM DA CORREÇÃO ---
             
-        # Converte a lista de dicionários para uma string formatada para o prompt do LLM
         exp_rec_shap = "Pontos importantes (SHAP): " + ", ".join([f"{item['feature']} (contribuição: {item['contrib_shap']}, valor: {item['valor_feature']})" for item in razoes_shap_str])
         
         for r in razoes_shap_str:
@@ -259,7 +258,7 @@ Aqui estão as explicações técnicas sobre os fatores que mais influenciaram e
 
 Com base nessas informações, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores SHAP e a regra do Anchor. **O valor de contribuição SHAP é um número que representa a força do impacto, não é um valor monetário**. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores SHAP e a regra do Anchor. O valor de contribuição SHAP é um número que representa a força do impacto, não é um valor monetário. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
 2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas reforce os pontos positivos.
 

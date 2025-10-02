@@ -16,54 +16,47 @@ import re
 def format_currency(value):
     return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# Função para processar e humanizar as regras do LIME
-def process_lime_rule(rule):
-    # Dicionário para traduzir nomes de features
-    feature_translations = {
-        'VL_IMOVEIS': 'o valor dos seus imóveis',
-        'VALOR_TABELA_CARROS': 'o valor de tabela dos seus carros',
-        'TEMPO_ULTIMO_EMPREGO_MESES': 'o seu tempo de último emprego',
-        'ULTIMO_SALARIO': 'o seu último salário',
-        'QT_CARROS': 'a quantidade de carros',
-        'OUTRA_RENDA_VALOR': 'o valor da sua outra renda',
-        'UF': 'a sua UF',
-    }
+# Função para humanizar as regras do LIME
+def get_humanized_lime_rules(lime_features):
+    humanized_rules = []
+    for rule, contrib in lime_features:
+        # Extrai o nome da feature e os valores da regra
+        parts = rule.split(' ')
+        feature_name = parts[0]
 
-    # Extrai o nome da feature
-    feature_name = rule.split()[0].replace('<', '').replace('>', '').replace('<=', '').replace('>=', '')
-    translated_name = feature_translations.get(feature_name, feature_name)
-    
-    # Humaniza as faixas de valores
-    if '<' in rule and '<=' in rule:
-        # Padrão: 0.00 < VL_IMOVEIS <= 185000.00
-        values = re.findall(r'(\d+\.?\d*)', rule)
-        if len(values) >= 2:
+        impact_text = "teve um impacto negativo" if contrib < 0 else "teve um impacto positivo"
+        
+        # Humaniza a regra
+        if '<=' in rule and '>' in rule:
+            # Padrão: 0.00 < VL_IMOVEIS <= 185000.00
+            values = re.findall(r'(\d+\.?\d*)', rule)
             lower_bound = float(values[0])
             upper_bound = float(values[1])
             if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO', 'OUTRA_RENDA_VALOR']:
-                return f"O valor de {translated_name} está entre {format_currency(lower_bound)} e {format_currency(upper_bound)}."
+                humanized_rule = f"O valor de {feature_name} está entre {format_currency(lower_bound)} e {format_currency(upper_bound)}."
             else:
-                return f"O valor de {translated_name} está entre {lower_bound} e {upper_bound}."
-    
-    # Humaniza regras de "menor ou igual"
-    elif '<=' in rule:
-        # Padrão: TEMPO_ULTIMO_EMPREGO_MESES <= 14.00
-        value = float(re.search(r'<= (\d+\.?\d*)', rule).group(1))
-        if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
-            return f"O valor de {translated_name} é igual ou menor que {format_currency(value)}."
+                humanized_rule = f"O valor de {feature_name} está entre {lower_bound} e {upper_bound}."
+        elif '<=' in rule:
+            # Padrão: TEMPO_ULTIMO_EMPREGO_MESES <= 14.00
+            value = float(re.search(r'<= (\d+\.?\d*)', rule).group(1))
+            humanized_rule = f"O valor de {feature_name} é igual ou menor que {value}."
+            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
+                humanized_rule = f"O valor de {feature_name} é igual ou menor que {format_currency(value)}."
+            else:
+                humanized_rule = f"O valor de {feature_name} é igual ou menor que {value}."
+        elif '>' in rule:
+            # Padrão: TEMPO_ULTIMO_EMPREGO_MESES > 14.00
+            value = float(re.search(r'> (\d+\.?\d*)', rule).group(1))
+            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
+                humanized_rule = f"O valor de {feature_name} é maior que {format_currency(value)}."
+            else:
+                humanized_rule = f"O valor de {feature_name} é maior que {value}."
         else:
-            return f"O valor de {translated_name} é igual ou menor que {value}."
-    
-    # Humaniza regras de "maior"
-    elif '>' in rule:
-        # Padrão: TEMPO_ULTIMO_EMPREGO_MESES > 14.00
-        value = float(re.search(r'> (\d+\.?\d*)', rule).group(1))
-        if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
-            return f"O valor de {translated_name} é maior que {format_currency(value)}."
-        else:
-            return f"O valor de {translated_name} é maior que {value}."
+            humanized_rule = rule
 
-    return rule  # Retorna a regra original se não houver um padrão correspondente
+        humanized_rules.append(f"{humanized_rule} {impact_text}.")
+
+    return "\n".join(humanized_rules)
 
 st.set_page_config(page_title="Crédito com XAI", layout="wide")
 
@@ -218,15 +211,12 @@ if st.button("Verificar Crédito"):
             feature_name = feature_names[j]
             contrib = contribs[j]
             val = X_input_df.iloc[0, j]
-            # --- CORREÇÃO: Humanizamos o SHAP aqui no Python, garantindo a formatação ---
             if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
                 val_str = format_currency(val)
                 razoes_shap_list.append(f"{feature_name}: contribuição de {contrib:.2f}, com um valor de {val_str}.")
             else:
                 razoes_shap_list.append(f"{feature_name}: contribuição de {contrib:.2f}, com um valor de {val}.")
-            # --- FIM DA CORREÇÃO ---
-        
-        # Envia a lista de frases humanizadas para o LLM
+            
         exp_rec_shap = "\n".join(razoes_shap_list)
 
         for r in razoes_shap_list:
@@ -251,12 +241,7 @@ if st.button("Verificar Crédito"):
         lime_features = lime_exp.as_list()
         
         # --- CORREÇÃO: Humanizamos o LIME aqui no Python, garantindo a formatação ---
-        processed_lime_features = []
-        for rule, contrib in lime_features:
-            human_rule = process_lime_rule(rule)
-            processed_lime_features.append(f"{human_rule} Teve uma contribuição de {contrib:.2f}.")
-
-        exp_rec_lime = "\n".join(processed_lime_features)
+        exp_rec_lime = get_humanized_lime_rules(lime_features)
         
         st.write(f"**LIME – Principais fatores:** {lime_features}")
         
@@ -304,7 +289,6 @@ if st.button("Verificar Crédito"):
 
     # ------------------- Feedback do LLM -------------------
     if client:
-        # Prompt otimizado e mais claro
         prompt = f"""
 Você é um Cientista de Dados Sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
 O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
@@ -317,7 +301,7 @@ Aqui estão as explicações técnicas sobre os fatores que mais influenciaram e
 
 Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores do SHAP. Para o LIME, use as regras fornecidas para explicar a decisão.
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores do SHAP e **liste em bullet points** as regras do LIME. Para cada item da lista do LIME, explique em linguagem natural como a condição do fator influenciou o resultado. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
 2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas sobre como o cliente pode melhorar seu perfil.
 

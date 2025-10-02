@@ -221,6 +221,7 @@ if st.button("Verificar Crédito"):
             feature_name = feature_names[j]
             contrib = contribs[j]
             val = X_input_df.iloc[0, j]
+            
             # Formatação de valores: monetário com R$ e peso SHAP sem R$
             if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
                 val_str = format_currency(val)
@@ -251,7 +252,6 @@ if st.button("Verificar Crédito"):
         )
         lime_features = lime_exp.as_list()
         
-        # --- CORREÇÃO: Humanizamos o LIME aqui no Python, garantindo a formatação ---
         exp_rec_lime = get_humanized_lime_rules(lime_features)
         
         st.write(f"**LIME – Principais fatores:** {lime_features}")

@@ -12,6 +12,51 @@ from eli5 import format_as_html
 from openai import OpenAI
 import re
 
+# Função para formatar valores monetários
+def format_currency(value):
+    return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+# Função para processar e humanizar as regras do LIME
+def process_lime_rule(rule):
+    # Dicionário para traduzir nomes de features
+    feature_translations = {
+        'VL_IMOVEIS': 'o valor dos seus imóveis',
+        'VALOR_TABELA_CARROS': 'o valor de tabela dos seus carros',
+        'TEMPO_ULTIMO_EMPREGO_MESES': 'o seu tempo de último emprego',
+        'ULTIMO_SALARIO': 'o seu último salário',
+        'QT_CARROS': 'a quantidade de carros',
+    }
+
+    # Regex para encontrar a feature e os valores
+    match = re.search(r'(\S+)\s*<?=?\s*(\S+)\s*<=\s*(\S+)\s*<\s*(\S+)', rule)
+    if not match:
+        match = re.search(r'(\S+)\s*<=\s*(\S+)', rule)
+        if match:
+            feature = match.group(1)
+            value = float(match.group(2))
+            if 'R$' in rule or feature in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS']:
+                 val_str = format_currency(value)
+                 return f"o valor da(s) {feature_translations.get(feature, feature)} é menor ou igual a {val_str}"
+            else:
+                return f"o valor da(s) {feature_translations.get(feature, feature)} é menor ou igual a {value}"
+
+    if match:
+        lower_bound = float(match.group(2))
+        upper_bound = float(match.group(4))
+        feature = match.group(3)
+        
+        # Formata valores monetários
+        if feature in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO']:
+            lower_str = format_currency(lower_bound)
+            upper_str = format_currency(upper_bound)
+            return f"{feature_translations.get(feature, feature)} está entre {lower_str} e {upper_str}"
+        
+        # Formata valores não-monetários
+        else:
+            return f"{feature_translations.get(feature, feature)} está entre {lower_bound} e {upper_bound}"
+    
+    return rule # Retorna a regra original se não conseguir processar
+
 st.set_page_config(page_title="Crédito com XAI", layout="wide")
 
 # --- Centralizar a configuração da API Key e a criação do cliente ---
@@ -132,7 +177,7 @@ if st.button("Verificar Crédito"):
     # Acumuladores para explicações
     exp_rec_shap = ""
     exp_rec_lime = ""
-    exp_rec_anchor = "" # Mantenha a variável para exibir o resultado no UI
+    exp_rec_anchor = ""
 
     # ------------------- SHAP -------------------
     try:
@@ -167,7 +212,7 @@ if st.button("Verificar Crédito"):
             val = X_input_df.iloc[0, j]
             
             if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
-                val_str = f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                val_str = format_currency(val)
             else:
                 val_str = str(val)
 
@@ -200,26 +245,13 @@ if st.button("Verificar Crédito"):
         )
         lime_features = lime_exp.as_list()
         
-        # --- CORREÇÃO: Pré-processamento mais robusto da string do LIME ---
+        # --- CORREÇÃO: Humanização e formatação robusta das regras do LIME ---
         processed_lime_features = []
         for rule, contrib in lime_features:
-            # Substitui os valores numéricos por valores monetários formatados
-            processed_rule = rule
-            for feature in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO', 'OUTRA_RENDA_VALOR']:
-                if feature in processed_rule:
-                    match = re.search(r'(\d+\.?\d*)\s*<', processed_rule)
-                    if match:
-                        val = float(match.group(1))
-                        val_str = f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-                        processed_rule = processed_rule.replace(match.group(1), val_str)
-
-            # Adiciona a regra processada à lista
-            processed_lime_features.append(processed_rule)
+            processed_lime_features.append(process_lime_rule(rule))
         
-        # Constrói a string final para o prompt do LLM
-        exp_rec_lime = "Regras de decisão (LIME): " + " e ".join(processed_lime_features)
+        exp_rec_lime = "\n".join([f"- {r}" for r in processed_lime_features])
         
-        # Exibe a string original para o usuário no UI
         st.write(f"**LIME – Principais fatores:** {lime_features}")
         # --- FIM DA CORREÇÃO ---
         
@@ -278,7 +310,7 @@ Aqui estão as explicações técnicas sobre os fatores que mais influenciaram e
 
 Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores e as regras do SHAP e do LIME. Detalhe cada um dos fatores, incluindo seus valores e como eles influenciaram a decisão. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores e as regras do SHAP e do LIME. **Liste cada um dos fatores do LIME em uma frase separada, com linguagem natural, explicando como eles influenciaram o resultado.** Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
 2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro.
 

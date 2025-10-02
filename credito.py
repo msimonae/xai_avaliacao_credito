@@ -158,21 +158,26 @@ if st.button("Verificar Crédito"):
             idx = np.argsort(contribs)[-3:]
             st.write("**Principais fatores que influenciaram a aprovação:**")
 
-        razoes_shap = []
+        # --- CORREÇÃO: Nova abordagem para formatar a string de SHAP ---
+        razoes_shap_str = []
         for j in idx:
+            feature_name = feature_names[j]
+            contrib = contribs[j]
             val = X_input_df.iloc[0, j]
-            # Formatação monetária dos valores de forma controlada
-            if feature_names[j] in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
-                 val_str = f"R${val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+            # Formatação de valores monetários
+            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
+                val_str = f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
             else:
-                 val_str = str(val)
+                val_str = str(val)
+
+            razoes_shap_str.append(f"{feature_name} (Contribuição SHAP: {contrib:.2f}, Valor: {val_str})")
             
-            razoes_shap.append(f"{feature_names[j]} (contribuição SHAP: {contribs[j]:.2f}, valor: {val_str})")
-
-        for r in razoes_shap:
+        exp_rec_shap = "Pontos importantes (SHAP): " + "; ".join(razoes_shap_str)
+        # --- FIM DA CORREÇÃO ---
+        
+        for r in razoes_shap_str:
             st.markdown(f"- {r}")
-
-        exp_rec_shap = f"Principais fatores (SHAP): {', '.join(razoes_shap)}"
 
     except Exception as e:
         st.warning(f"Não foi possível gerar SHAP: {e}")
@@ -230,7 +235,7 @@ if st.button("Verificar Crédito"):
         rule = " E ".join(anchor_exp.names())
         st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
         st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
-        exp_rec_anchor = f"Anchor (regra): {rule}"
+        exp_rec_anchor = f"Regra Anchor: {rule}"
 
     except Exception as e:
         st.warning(f"Não foi possível gerar a explicação Anchor: {e}")
@@ -243,12 +248,12 @@ Você é um Cientista de Dados Sênior, especialista em explicar os resultados d
 O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
 
 Aqui estão as explicações técnicas sobre os fatores que mais influenciaram essa decisão:
-- **Fatores SHAP:** {exp_rec_shap}
-- **Regra ANCHOR:** {exp_rec_anchor}
+- **SHAP:** {exp_rec_shap}
+- **ANCHOR:** {exp_rec_anchor}
 
 Com base nessas informações, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores SHAP e a regra do Anchor. Use frases curtas e diretas. **Formate valores monetários com R$ (ex: R$ 50.000,00)** e use vírgulas e pontos decimais de forma correta.
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores SHAP e a regra do Anchor. Use frases curtas e diretas. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
 2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas reforce os pontos positivos.
 

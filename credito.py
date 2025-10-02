@@ -116,9 +116,6 @@ if st.button("Verificar Crédito"):
         VALOR_TABELA_CARROS, faixa_etaria_map[FAIXA_ETARIA]
     ]
 
-    # A correção já foi feita na declaração da lista feature_names.
-    # O restante do código não precisa de alteração.
-    
     X_input_df = pd.DataFrame([novos_dados], columns=feature_names)
     X_input_scaled = scaler.transform(X_input_df)
     X_input_scaled_df = pd.DataFrame(X_input_scaled, columns=feature_names)
@@ -134,6 +131,7 @@ if st.button("Verificar Crédito"):
     # Acumuladores para explicações
     exp_rec_shap = ""
     exp_rec_anchor = ""
+    exp_rec_lime = ""  # Nova variável para o LIME
 
     # ------------------- SHAP -------------------
     try:
@@ -167,7 +165,6 @@ if st.button("Verificar Crédito"):
             contrib = contribs[j]
             val = X_input_df.iloc[0, j]
             
-            # Formatação de valores monetários
             if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
                 val_str = f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
             else:
@@ -201,7 +198,13 @@ if st.button("Verificar Crédito"):
             num_features=5
         )
         lime_features = [f for f, _ in lime_exp.as_list()]
+        
+        # --- CORREÇÃO: Capturando a explicação completa do LIME ---
+        # A lista `lime_exp.as_list()` já tem o formato ideal para o prompt.
+        exp_rec_lime = "Regras de decisão (LIME): " + " e ".join(lime_features)
+        
         st.write(f"**LIME – Principais fatores:** {lime_features}")
+        # --- FIM DA CORREÇÃO ---
         
     except Exception as e:
         st.warning(f"Não foi possível gerar LIME: {e}")
@@ -254,11 +257,12 @@ O modelo de análise de crédito previu o resultado '{resultado_texto}' para um 
 
 Aqui estão as explicações técnicas sobre os fatores que mais influenciaram essa decisão:
 - **SHAP:** {exp_rec_shap}
+- **LIME:** {exp_rec_lime}
 - **ANCHOR:** {exp_rec_anchor}
 
 Com base nessas informações, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores SHAP e a regra do Anchor. O valor de contribuição SHAP é um número que representa a força do impacto, não é um valor monetário. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores SHAP e as regras do LIME e do Anchor. O valor de contribuição SHAP é um número que representa a força do impacto, não é um valor monetário. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
 2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas reforce os pontos positivos.
 

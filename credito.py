@@ -12,9 +12,58 @@ from eli5 import format_as_html
 from openai import OpenAI
 import re
 
-# Função para formatar valores monetários - mantemos esta, pois é usada no UI
+# Função para formatar valores monetários
 def format_currency(value):
     return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+# Função para humanizar as regras do LIME
+def process_lime_rule(rule):
+    # Dicionário para traduzir nomes de features
+    feature_translations = {
+        'VL_IMOVEIS': 'o valor dos seus imóveis',
+        'VALOR_TABELA_CARROS': 'o valor de tabela dos seus carros',
+        'TEMPO_ULTIMO_EMPREGO_MESES': 'o seu tempo de último emprego',
+        'ULTIMO_SALARIO': 'o seu último salário',
+        'QT_CARROS': 'a quantidade de carros',
+        'OUTRA_RENDA_VALOR': 'o valor da sua outra renda',
+        'UF': 'a sua UF',
+    }
+
+    # Extrai o nome da feature
+    feature_name = rule.split()[0].replace('<', '').replace('>', '').replace('<=', '').replace('>=', '')
+    translated_name = feature_translations.get(feature_name, feature_name)
+    
+    # Humaniza as faixas de valores
+    if '<' in rule and '<=' in rule:
+        # Padrão: 0.00 < VL_IMOVEIS <= 185000.00
+        values = re.findall(r'(\d+\.?\d*)', rule)
+        if len(values) >= 2:
+            lower_bound = float(values[0])
+            upper_bound = float(values[1])
+            if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO', 'OUTRA_RENDA_VALOR']:
+                return f"O valor de {translated_name} está entre {format_currency(lower_bound)} e {format_currency(upper_bound)}."
+            else:
+                return f"O valor de {translated_name} está entre {lower_bound} e {upper_bound}."
+    
+    # Humaniza regras de "menor ou igual"
+    elif '<=' in rule:
+        # Padrão: TEMPO_ULTIMO_EMPREGO_MESES <= 14.00
+        value = float(re.search(r'<= (\d+\.?\d*)', rule).group(1))
+        if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
+            return f"O valor de {translated_name} é igual ou menor que {format_currency(value)}."
+        else:
+            return f"O valor de {translated_name} é igual ou menor que {value}."
+    
+    # Humaniza regras de "maior"
+    elif '>' in rule:
+        # Padrão: TEMPO_ULTIMO_EMPREGO_MESES > 14.00
+        value = float(re.search(r'> (\d+\.?\d*)', rule).group(1))
+        if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
+            return f"O valor de {translated_name} é maior que {format_currency(value)}."
+        else:
+            return f"O valor de {translated_name} é maior que {value}."
+
+    return rule  # Retorna a regra original se não houver um padrão correspondente
 
 st.set_page_config(page_title="Crédito com XAI", layout="wide")
 
@@ -195,7 +244,13 @@ if st.button("Verificar Crédito"):
         )
         lime_features = lime_exp.as_list()
         
-        exp_rec_lime = str(lime_features)
+        # --- CORREÇÃO: Humanizamos as regras do LIME antes de enviar para o LLM ---
+        processed_lime_features = []
+        for rule, contrib in lime_features:
+            human_rule = process_lime_rule(rule)
+            processed_lime_features.append(f"{human_rule} | Contribuição: {contrib:.2f}")
+
+        exp_rec_lime = "\n".join(processed_lime_features)
         
         st.write(f"**LIME – Principais fatores:** {lime_features}")
         
@@ -270,15 +325,13 @@ Aqui estão as explicações técnicas sobre os fatores que mais influenciaram e
 
 Com base nessas informações, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores do SHAP e, para o LIME, detalhe cada uma das regras de decisão. Use os valores de entrada do cliente para contextualizar as regras.
-2.  **Formatação:**
-    - Formate **apenas valores monetários** com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00). Converta valores como '185000.00' para 'R$ 185.000,00' e '35000.00a50000.00' para 'R$ 35.000,00 a R$ 50.000,00'.
-    - As contribuições do SHAP (ex: -0.32) são apenas números, não valores monetários.
-    - O feedback deve ser estruturado em tópicos, como "Análise do seu Perfil Financeiro" e "Recomendações".
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores do SHAP e **liste em bullet points** as regras do LIME. Para cada item da lista do LIME, explique em linguagem natural como a condição do fator influenciou o resultado. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
-3.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas sobre como o cliente pode melhorar seu perfil.
+2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas sobre como o cliente pode melhorar seu perfil.
 
-4.  **Linguagem:** Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de palavras. Não inclua informações sobre a explicação do Anchor no seu feedback.
+3.  **Estrutura:** Divida sua resposta em tópicos, como "Análise do seu Perfil Financeiro" e "Recomendações".
+
+Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de palavras. Não inclua informações sobre a explicação do Anchor no seu feedback.
 """
         try:
             with st.spinner("Gerando feedback personalizado..."):

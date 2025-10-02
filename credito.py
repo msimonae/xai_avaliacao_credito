@@ -250,9 +250,9 @@ Com base nessas informações, crie um feedback amigável para o cliente, seguin
 
 1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores SHAP e a regra do Anchor. Use frases curtas e diretas. **Formate valores monetários com R$ (ex: R$ 50.000,00)** e use vírgulas e pontos decimais de forma correta.
 
-2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil. Se foi aprovado, apenas reforce os pontos positivos.
+2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas reforce os pontos positivos.
 
-3.  **Estrutura:** Divida sua resposta em tópicos, como "Análise do seu Perfil" e "Recomendações".
+3.  **Estrutura:** Divida sua resposta em tópicos, como "Análise do seu Perfil Financeiro" e "Recomendações".
 
 Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de palavras.
 """

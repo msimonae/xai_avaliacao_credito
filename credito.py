@@ -195,7 +195,6 @@ if st.button("Verificar Crédito"):
         )
         lime_features = lime_exp.as_list()
         
-        # --- CORREÇÃO: Enviamos a lista de tuplas do LIME diretamente para o LLM ---
         exp_rec_lime = str(lime_features)
         
         st.write(f"**LIME – Principais fatores:** {lime_features}")
@@ -273,7 +272,7 @@ Com base nessas informações, crie um feedback amigável para o cliente, seguin
 
 1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores do SHAP e, para o LIME, detalhe cada uma das regras de decisão. Use os valores de entrada do cliente para contextualizar as regras.
 2.  **Formatação:**
-    - Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+    - Formate **apenas valores monetários** com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00). Converta valores como '185000.00' para 'R$ 185.000,00' e '35000.00a50000.00' para 'R$ 35.000,00 a R$ 50.000,00'.
     - As contribuições do SHAP (ex: -0.32) são apenas números, não valores monetários.
     - O feedback deve ser estruturado em tópicos, como "Análise do seu Perfil Financeiro" e "Recomendações".
 

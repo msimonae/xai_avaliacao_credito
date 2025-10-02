@@ -213,4 +213,73 @@ if st.button("Verificar Crédito"):
         eli5_neg = [w.feature for w in eli5_expl.targets[0].feature_weights.neg]
         eli5_pos = [w.feature for w in eli5_expl.targets[0].feature_weights.pos]
         st.write(f"**ELI5 – Negativos:** {eli5_neg}")
-        st.write(
+        st.write(f"**ELI5 – Positivos:** {eli5_pos}")
+
+        st.markdown("**Detalhe ELI5:**")
+        html_eli5 = format_as_html(eli5_expl)
+        st.components.v1.html(html_eli5, height=420, scrolling=True)
+    except Exception as e:
+        st.warning(f"Não foi possível gerar ELI5: {e}")
+
+    # ------------------- Anchor -------------------
+    try:
+        st.markdown("**Explicação com Anchor (Regras Mínimas):**")
+        def predict_fn_anchor(arr2d):
+            df = pd.DataFrame(arr2d, columns=feature_names)
+            scaled = scaler.transform(df)
+            return lr_model.predict(scaled)
+
+        anchor_explainer = anchor_tabular.AnchorTabularExplainer(
+            class_names=['Recusado', 'Aprovado'],
+            feature_names=feature_names,
+            train_data=X_train_df.values
+        )
+        anchor_exp = anchor_explainer.explain_instance(
+            X_input_df.values[0], predict_fn_anchor, threshold=0.95
+        )
+        
+        rule = " E ".join(anchor_exp.names())
+        st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
+        st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
+        exp_rec_anchor = f"Regra Anchor: {rule}"
+
+    except Exception as e:
+        st.warning(f"Não foi possível gerar a explicação Anchor: {e}")
+
+    # ------------------- Feedback do LLM -------------------
+    if client:
+        # Prompt otimizado e mais claro
+        prompt = f"""
+Você é um Cientista de Dados Sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
+O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
+
+Aqui estão as explicações técnicas sobre os fatores que mais influenciaram essa decisão:
+- **SHAP:** {exp_rec_shap}
+- **ANCHOR:** {exp_rec_anchor}
+
+Com base nessas informações, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
+
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores SHAP e a regra do Anchor. **O valor de contribuição SHAP é um número que representa a força do impacto, não é um valor monetário**. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+
+2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas reforce os pontos positivos.
+
+3.  **Estrutura:** Divida sua resposta em tópicos, como "Análise do seu Perfil Financeiro" e "Recomendações".
+
+Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de palavras.
+"""
+        try:
+            with st.spinner("Gerando feedback personalizado..."):
+                resp = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "Você é um analista de crédito sênior e especialista em comunicação com clientes."},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.1,
+                    max_tokens=500
+                )
+                st.markdown("### 🔍 Feedback do Especialista feito pelo LLM")
+                feedback_content = resp.choices[0].message.content
+                st.write(feedback_content)
+        except Exception as e:
+            st.error(f"Erro ao gerar feedback com a OpenAI: {e}")

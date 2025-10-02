@@ -18,44 +18,59 @@ def format_currency(value):
 
 # Função para processar e humanizar as regras do LIME
 def process_lime_rule(rule):
-    # Dicionário para traduzir nomes de features
+    # Dicionário para traduzir nomes de features e os termos
     feature_translations = {
         'VL_IMOVEIS': 'o valor dos seus imóveis',
         'VALOR_TABELA_CARROS': 'o valor de tabela dos seus carros',
         'TEMPO_ULTIMO_EMPREGO_MESES': 'o seu tempo de último emprego',
         'ULTIMO_SALARIO': 'o seu último salário',
         'QT_CARROS': 'a quantidade de carros',
+        'OUTRA_RENDA_VALOR': 'o valor da sua outra renda',
+        'UF': 'a sua UF',
     }
 
-    # Regex para encontrar a feature e os valores
-    match = re.search(r'(\S+)\s*<?=?\s*(\S+)\s*<=\s*(\S+)\s*<\s*(\S+)', rule)
+    # Esta regex é mais robusta para diferentes formatos
+    match = re.search(r'([a-zA-Z_]+)\s*(.*)', rule)
     if not match:
-        match = re.search(r'(\S+)\s*<=\s*(\S+)', rule)
-        if match:
-            feature = match.group(1)
-            value = float(match.group(2))
-            if 'R$' in rule or feature in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS']:
-                 val_str = format_currency(value)
-                 return f"o valor da(s) {feature_translations.get(feature, feature)} é menor ou igual a {val_str}"
-            else:
-                return f"o valor da(s) {feature_translations.get(feature, feature)} é menor ou igual a {value}"
+        return rule # Retorna a regra original se não conseguir processar
 
-    if match:
-        lower_bound = float(match.group(2))
-        upper_bound = float(match.group(4))
-        feature = match.group(3)
-        
-        # Formata valores monetários
-        if feature in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO']:
-            lower_str = format_currency(lower_bound)
-            upper_str = format_currency(upper_bound)
-            return f"{feature_translations.get(feature, feature)} está entre {lower_str} e {upper_str}"
-        
-        # Formata valores não-monetários
-        else:
-            return f"{feature_translations.get(feature, feature)} está entre {lower_bound} e {upper_bound}"
+    feature = match.group(1)
+    condition = match.group(2)
     
-    return rule # Retorna a regra original se não conseguir processar
+    # Humaniza a regra
+    if '<=' in condition and '>' in condition:
+        # Padrão: 0.00 < VL_IMOVEIS <= 185000.00
+        values = re.findall(r'(\d+\.?\d*)', condition)
+        if len(values) >= 2:
+            lower_bound = float(values[0])
+            upper_bound = float(values[1])
+            if feature in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO', 'OUTRA_RENDA_VALOR']:
+                return f"ter {feature_translations.get(feature, feature)} entre {format_currency(lower_bound)} e {format_currency(upper_bound)}"
+            else:
+                return f"ter {feature_translations.get(feature, feature)} entre {lower_bound} e {upper_bound}"
+    
+    elif '<=' in condition:
+        # Padrão: TEMPO_ULTIMO_EMPREGO_MESES <= 14.00
+        value = float(re.search(r'<= (\d+\.?\d*)', condition).group(1))
+        if feature in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
+            return f"ter {feature_translations.get(feature, feature)} igual ou menor que {format_currency(value)}"
+        else:
+            return f"ter {feature_translations.get(feature, feature)} igual ou menor que {value} meses"
+    
+    elif '>' in condition:
+        # Padrão: TEMPO_ULTIMO_EMPREGO_MESES > 14.00
+        value = float(re.search(r'> (\d+\.?\d*)', condition).group(1))
+        if feature in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
+            return f"ter {feature_translations.get(feature, feature)} maior que {format_currency(value)}"
+        else:
+            return f"ter {feature_translations.get(feature, feature)} maior que {value} meses"
+
+    elif '=' in condition:
+        # Padrão: UF = 1.00
+        value = float(re.search(r'= (\d+\.?\d*)', condition).group(1))
+        return f"ter {feature_translations.get(feature, feature)} com o código {int(value)}"
+        
+    return rule # Retorna a regra original se nada se encaixar
 
 st.set_page_config(page_title="Crédito com XAI", layout="wide")
 
@@ -245,15 +260,14 @@ if st.button("Verificar Crédito"):
         )
         lime_features = lime_exp.as_list()
         
-        # --- CORREÇÃO: Humanização e formatação robusta das regras do LIME ---
         processed_lime_features = []
         for rule, contrib in lime_features:
             processed_lime_features.append(process_lime_rule(rule))
         
+        # Unimos as frases em uma string para o prompt, separadas por quebras de linha
         exp_rec_lime = "\n".join([f"- {r}" for r in processed_lime_features])
         
         st.write(f"**LIME – Principais fatores:** {lime_features}")
-        # --- FIM DA CORREÇÃO ---
         
     except Exception as e:
         st.warning(f"Não foi possível gerar LIME: {e}")
@@ -299,7 +313,6 @@ if st.button("Verificar Crédito"):
 
     # ------------------- Feedback do LLM -------------------
     if client:
-        # Prompt otimizado e mais claro
         prompt = f"""
 Você é um Cientista de Dados Sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
 O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
@@ -310,7 +323,7 @@ Aqui estão as explicações técnicas sobre os fatores que mais influenciaram e
 
 Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores e as regras do SHAP e do LIME. **Liste cada um dos fatores do LIME em uma frase separada, com linguagem natural, explicando como eles influenciaram o resultado.** Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores do SHAP e **liste em bullet points** as regras do LIME. Para cada item da lista do LIME, explique em linguagem natural como a condição do fator influenciou o resultado. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
 2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro.
 

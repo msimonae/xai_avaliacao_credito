@@ -16,7 +16,7 @@ import re
 def format_currency(value):
     return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# Função para humanizar as regras do LIME
+# Função para processar e humanizar as regras do LIME
 def process_lime_rule(rule):
     # Dicionário para traduzir nomes de features
     feature_translations = {
@@ -218,10 +218,16 @@ if st.button("Verificar Crédito"):
             feature_name = feature_names[j]
             contrib = contribs[j]
             val = X_input_df.iloc[0, j]
-            razoes_shap_list.append(f"{feature_name} (contribuição: {contrib:.2f}, valor: {val})")
+            # --- CORREÇÃO: Humanizamos o SHAP aqui no Python, garantindo a formatação ---
+            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
+                val_str = format_currency(val)
+                razoes_shap_list.append(f"{feature_name}: contribuição de {contrib:.2f}, com um valor de {val_str}.")
+            else:
+                razoes_shap_list.append(f"{feature_name}: contribuição de {contrib:.2f}, com um valor de {val}.")
+            # --- FIM DA CORREÇÃO ---
         
-        # Envia a lista para o LLM
-        exp_rec_shap = str(razoes_shap_list)
+        # Envia a lista de frases humanizadas para o LLM
+        exp_rec_shap = "\n".join(razoes_shap_list)
 
         for r in razoes_shap_list:
             st.markdown(f"- {r}")
@@ -244,11 +250,11 @@ if st.button("Verificar Crédito"):
         )
         lime_features = lime_exp.as_list()
         
-        # --- CORREÇÃO: Humanizamos as regras do LIME antes de enviar para o LLM ---
+        # --- CORREÇÃO: Humanizamos o LIME aqui no Python, garantindo a formatação ---
         processed_lime_features = []
         for rule, contrib in lime_features:
             human_rule = process_lime_rule(rule)
-            processed_lime_features.append(f"{human_rule} | Contribuição: {contrib:.2f}")
+            processed_lime_features.append(f"{human_rule} Teve uma contribuição de {contrib:.2f}.")
 
         exp_rec_lime = "\n".join(processed_lime_features)
         
@@ -298,34 +304,20 @@ if st.button("Verificar Crédito"):
 
     # ------------------- Feedback do LLM -------------------
     if client:
-        # Pega os valores de entrada do usuário para contextualizar a resposta
-        input_values_dict = {
-            'VL_IMOVEIS': VL_IMOVEIS,
-            'VALOR_TABELA_CARROS': VALOR_TABELA_CARROS,
-            'TEMPO_ULTIMO_EMPREGO_MESES': TEMPO_ULTIMO_EMPREGO_MESES,
-            'ULTIMO_SALARIO': ULTIMO_SALARIO,
-            'QT_CARROS': len(QT_CARROS_input),
-            'OUTRA_RENDA_VALOR': OUTRA_RENDA_VALOR,
-            'UF': uf_map[UF]
-        }
-        
-        # Converte o dicionário para uma string formatada para o LLM
-        input_values_str = "\n".join([f"- {key}: {value}" for key, value in input_values_dict.items()])
-
         # Prompt otimizado e mais claro
         prompt = f"""
 Você é um Cientista de Dados Sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
 O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
 
 Aqui estão as explicações técnicas sobre os fatores que mais influenciaram essa decisão:
-- **SHAP (Contribuição dos atributos):** {exp_rec_shap}
-- **LIME (Regras de decisão):** {exp_rec_lime}
-- **Valores de entrada do cliente:**
-{input_values_str}
+- **SHAP (Contribuição dos atributos):**
+{exp_rec_shap}
+- **LIME (Regras de decisão):**
+{exp_rec_lime}
 
-Com base nessas informações, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
+Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores do SHAP e **liste em bullet points** as regras do LIME. Para cada item da lista do LIME, explique em linguagem natural como a condição do fator influenciou o resultado. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores do SHAP. Para o LIME, use as regras fornecidas para explicar a decisão.
 
 2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas sobre como o cliente pode melhorar seu perfil.
 

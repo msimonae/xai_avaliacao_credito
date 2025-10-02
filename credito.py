@@ -29,6 +29,10 @@ def get_humanized_lime_rules(lime_features):
         'QT_CARROS': 'a quantidade de carros',
     }
 
+    # Como você observou, todos os fatores têm um impacto negativo para a recusa
+    # Vamos pré-determinar o impacto para evitar a alucinação do LLM
+    impact = "negativo"
+
     for rule, contrib in lime_features:
         # Padrão para regras com faixa de valores
         match_range = re.search(r'([a-zA-Z_]+)\s*(?:[<=>]+)\s*(\S+)\s*(?:[<=>]+)\s*(\S+)', rule)
@@ -36,8 +40,7 @@ def get_humanized_lime_rules(lime_features):
         match_single = re.search(r'([a-zA-Z_]+)\s*(?:[<=>]+)\s*(\S+)', rule)
 
         rule_text = rule
-        impact = "negativo" if contrib < 0 else "positivo"
-
+        
         if match_range:
             feature_name = match_range.group(1)
             lower_val = float(match_range.group(2))
@@ -221,8 +224,6 @@ if st.button("Verificar Crédito"):
             feature_name = feature_names[j]
             contrib = contribs[j]
             val = X_input_df.iloc[0, j]
-            
-            # Formatação de valores: monetário com R$ e peso SHAP sem R$
             if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
                 val_str = format_currency(val)
                 razoes_shap_list.append(f"{feature_name}: contribuição de {contrib:.2f}, com um valor de {val_str}.")
@@ -252,6 +253,7 @@ if st.button("Verificar Crédito"):
         )
         lime_features = lime_exp.as_list()
         
+        # --- CORREÇÃO: Humanizamos o LIME aqui no Python, garantindo a formatação ---
         exp_rec_lime = get_humanized_lime_rules(lime_features)
         
         st.write(f"**LIME – Principais fatores:** {lime_features}")

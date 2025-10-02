@@ -13,16 +13,13 @@ from openai import OpenAI
 
 st.set_page_config(page_title="Crédito com XAI", layout="wide")
 
-# --- CORREÇÃO: Centralizar a configuração da API Key e a criação do cliente ---
-# Pega a chave API dos secrets do Streamlit. A variável de ambiente é um fallback.
+# --- Centralizar a configuração da API Key e a criação do cliente ---
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 
-# Instancia o cliente OpenAI UMA VEZ. Se a chave não existir, client será None.
 client = None
 if OPENAI_API_KEY:
     client = OpenAI(api_key=OPENAI_API_KEY)
 else:
-    # Este aviso aparecerá uma vez no topo da página se a chave não for encontrada.
     st.warning("⚠️ OPENAI_API_KEY não configurada. O feedback do LLM não estará disponível.")
 
 # ------------------- Carregar modelos/dados -------------------
@@ -67,7 +64,6 @@ with col1:
 with col2:
     QT_IMOVEIS = st.number_input('Qtd. Imóveis', min_value=0, value=1)
 
-    # Substituição: Text Input editável para valores monetários
     VL_IMOVEIS_str = st.text_input('Valor dos Imóveis (R$)', value="100000")
     try:
         VL_IMOVEIS = float(VL_IMOVEIS_str.replace("R$", "").replace(".", "").replace(",", "."))
@@ -76,7 +72,6 @@ with col2:
 
     OUTRA_RENDA = st.radio('Outra renda?', ['Sim', 'Não'], index=1)
 
-    # ✅ Alterado para text_input, sem botões - e +
     OUTRA_RENDA_VALOR = 0.0
     if OUTRA_RENDA == 'Sim':
         OUTRA_RENDA_VALOR_str = st.text_input('Valor Outra Renda (R$)', value="2000")
@@ -88,11 +83,9 @@ with col2:
     TEMPO_ULTIMO_EMPREGO_MESES = st.slider('Tempo Últ. Emprego (meses)', 0, 240, 5)
 
 with col3:
-    # Radio no lugar do checkbox, igual ao campo "Outra renda?"
     TRABALHANDO_ATUALMENTE = st.radio('Trabalhando atualmente?', ['Sim', 'Não'], index=0)
     trabalhando_flag = 1 if TRABALHANDO_ATUALMENTE == 'Sim' else 0
 
-    # ✅ Mostrar "Último Salário" só se a pessoa estiver trabalhando
     if TRABALHANDO_ATUALMENTE == 'Sim':
         ULTIMO_SALARIO_str = st.text_input('Último Salário (R$)', value="5400")
         try:
@@ -107,7 +100,6 @@ with col3:
     QT_CARROS_input = st.multiselect('Qtd. Carros', [0,1,2,3,4,5], default=[1])
     VALOR_TABELA_CARROS = st.slider('Valor Tabela Carros (R$)', 0, 200000, 45000, step=5000)
     FAIXA_ETARIA = st.radio('Faixa Etária', faixas_etarias, index=2)
-
 
 if st.button("Verificar Crédito"):
     # ------------------- Montar dados do input -------------------
@@ -124,7 +116,6 @@ if st.button("Verificar Crédito"):
         VALOR_TABELA_CARROS, faixa_etaria_map[FAIXA_ETARIA]
     ]
 
-    # ✅ Correção: reconstruir X_input_df e X_input_scaled
     X_input_df = pd.DataFrame([novos_dados], columns=feature_names)
     X_input_scaled = scaler.transform(X_input_df)
     X_input_scaled_df = pd.DataFrame(X_input_scaled, columns=feature_names)
@@ -137,8 +128,9 @@ if st.button("Verificar Crédito"):
     st.markdown(f"### Resultado: <span style='color:{cor}; font-weight:700'>{resultado_texto}</span>", unsafe_allow_html=True)
     st.write(f"Probabilidade de Aprovação: **{proba:.2%}**")
 
-    exp_rec = ""  # acumulador para explicações
-
+    # Acumuladores para explicações
+    exp_rec_shap = ""
+    exp_rec_anchor = ""
 
     # ------------------- SHAP -------------------
     try:
@@ -166,14 +158,21 @@ if st.button("Verificar Crédito"):
             idx = np.argsort(contribs)[-3:]
             st.write("**Principais fatores que influenciaram a aprovação:**")
 
-        razoes_shap = [
-            f"{feature_names[j]} (contribuição SHAP: {contribs[j]:.2f}, valor: {X_input_df.iloc[0, j]})"
-            for j in idx
-        ]
+        razoes_shap = []
+        for j in idx:
+            val = X_input_df.iloc[0, j]
+            # Formatação monetária dos valores de forma controlada
+            if feature_names[j] in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
+                 val_str = f"R${val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            else:
+                 val_str = str(val)
+            
+            razoes_shap.append(f"{feature_names[j]} (contribuição SHAP: {contribs[j]:.2f}, valor: {val_str})")
+
         for r in razoes_shap:
             st.markdown(f"- {r}")
 
-        exp_rec += f"Principais fatores (SHAP): {razoes_shap}\n"
+        exp_rec_shap = f"Principais fatores (SHAP): {', '.join(razoes_shap)}"
 
     except Exception as e:
         st.warning(f"Não foi possível gerar SHAP: {e}")
@@ -193,10 +192,7 @@ if st.button("Verificar Crédito"):
         )
         lime_features = [f for f, _ in lime_exp.as_list()]
         st.write(f"**LIME – Principais fatores:** {lime_features}")
-        exp_rec += f"Principais fatores (LIME): {lime_features}\n"
-
-        st.markdown("**Detalhe LIME:**")
-        st.components.v1.html(lime_exp.as_html(), height=420, scrolling=True)
+        
     except Exception as e:
         st.warning(f"Não foi possível gerar LIME: {e}")
 
@@ -207,7 +203,6 @@ if st.button("Verificar Crédito"):
         eli5_pos = [w.feature for w in eli5_expl.targets[0].feature_weights.pos]
         st.write(f"**ELI5 – Negativos:** {eli5_neg}")
         st.write(f"**ELI5 – Positivos:** {eli5_pos}")
-        exp_rec += f"ELI5 negativos: {eli5_neg}, positivos: {eli5_pos}\n"
 
         st.markdown("**Detalhe ELI5:**")
         html_eli5 = format_as_html(eli5_expl)
@@ -215,8 +210,6 @@ if st.button("Verificar Crédito"):
     except Exception as e:
         st.warning(f"Não foi possível gerar ELI5: {e}")
 
-
-    
     # ------------------- Anchor -------------------
     try:
         st.markdown("**Explicação com Anchor (Regras Mínimas):**")
@@ -237,30 +230,31 @@ if st.button("Verificar Crédito"):
         rule = " E ".join(anchor_exp.names())
         st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
         st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
-        exp_rec += f"Anchor (regra): {rule}\n"
+        exp_rec_anchor = f"Anchor (regra): {rule}"
 
     except Exception as e:
         st.warning(f"Não foi possível gerar a explicação Anchor: {e}")
 
     # ------------------- Feedback do LLM -------------------
-    # Usa o cliente 'client' que foi criado no início
     if client:
+        # Prompt otimizado e mais claro
         prompt = f"""
 Você é um Cientista de Dados Sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
 O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
-Com base nas explicações de SHAP e Anchor abaixo, escreva um feedback claro e amigável ao cliente sobre os motivos do resultado e recomendações para aumentar as chances de aprovação futura.
-Abaixo estão as explicações técnicas de diferentes ferramentas de XAI (Explainable AI) sobre os fatores que mais influenciaram essa decisão.
 
-Resumo das Explicações Técnicas:
-{exp_rec}
+Aqui estão as explicações técnicas sobre os fatores que mais influenciaram essa decisão:
+- **Fatores SHAP:** {exp_rec_shap}
+- **Regra ANCHOR:** {exp_rec_anchor}
 
-Sua tarefa é criar um feedback para o cliente em duas partes:
-1.  **Análise do Resultado:** De forma amigável, explique em 3-5 frases os principais motivos que levaram à decisão de '{resultado_texto}', baseando-se nos fatores mais importantes nas explicações e na âncora para obter a aprovação de crédito conforme a explicação do Anchor e escrever de maneira compreensível sem concatenar as palavras. 
-2.  **Use os resultados gerados no SHAP e Anchor de todos os atributos necessários para aprovação e coloque o "R$" antes dos resultados de valores de valor dos seus imóveis, salário e carros. 
-3.  **Fale sobre "pontos positivos", "pontos a melhorar", "seu perfil financeiro", etc.
-2.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
+Com base nessas informações, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-Seja direto, empático e construtivo.
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores SHAP e a regra do Anchor. Use frases curtas e diretas. **Formate valores monetários com R$ (ex: R$ 50.000,00)** e use vírgulas e pontos decimais de forma correta.
+
+2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil. Se foi aprovado, apenas reforce os pontos positivos.
+
+3.  **Estrutura:** Divida sua resposta em tópicos, como "Análise do seu Perfil" e "Recomendações".
+
+Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de palavras.
 """
         try:
             with st.spinner("Gerando feedback personalizado..."):
@@ -274,7 +268,6 @@ Seja direto, empático e construtivo.
                     max_tokens=500
                 )
                 st.markdown("### 🔍 Feedback do Especialista feito pelo LLM")
-                # --- CORREÇÃO: Acessar o conteúdo da resposta da API ---
                 feedback_content = resp.choices[0].message.content
                 st.write(feedback_content)
         except Exception as e:

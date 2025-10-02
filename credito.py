@@ -10,6 +10,7 @@ import lime.lime_tabular
 import eli5
 from eli5 import format_as_html
 from openai import OpenAI
+import re
 
 st.set_page_config(page_title="Crédito com XAI", layout="wide")
 
@@ -130,7 +131,8 @@ if st.button("Verificar Crédito"):
 
     # Acumuladores para explicações
     exp_rec_shap = ""
-    exp_rec_lime = ""  # Nova variável para o LIME
+    exp_rec_lime = ""
+    exp_rec_anchor = "" # Mantenha a variável para exibir o resultado no UI
 
     # ------------------- SHAP -------------------
     try:
@@ -196,12 +198,30 @@ if st.button("Verificar Crédito"):
             lambda x: lr_model.predict_proba(scaler.transform(pd.DataFrame(x, columns=feature_names))),
             num_features=5
         )
-        lime_features = [f for f, _ in lime_exp.as_list()]
+        lime_features = lime_exp.as_list()
         
-        # O LIME já retorna strings detalhadas, basta uni-las para o prompt.
-        exp_rec_lime = "Regras de decisão (LIME): " + " e ".join(lime_features)
+        # --- CORREÇÃO: Pré-processamento mais robusto da string do LIME ---
+        processed_lime_features = []
+        for rule, contrib in lime_features:
+            # Substitui os valores numéricos por valores monetários formatados
+            processed_rule = rule
+            for feature in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO', 'OUTRA_RENDA_VALOR']:
+                if feature in processed_rule:
+                    match = re.search(r'(\d+\.?\d*)\s*<', processed_rule)
+                    if match:
+                        val = float(match.group(1))
+                        val_str = f"R$ {val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                        processed_rule = processed_rule.replace(match.group(1), val_str)
+
+            # Adiciona a regra processada à lista
+            processed_lime_features.append(processed_rule)
         
+        # Constrói a string final para o prompt do LLM
+        exp_rec_lime = "Regras de decisão (LIME): " + " e ".join(processed_lime_features)
+        
+        # Exibe a string original para o usuário no UI
         st.write(f"**LIME – Principais fatores:** {lime_features}")
+        # --- FIM DA CORREÇÃO ---
         
     except Exception as e:
         st.warning(f"Não foi possível gerar LIME: {e}")
@@ -221,8 +241,29 @@ if st.button("Verificar Crédito"):
         st.warning(f"Não foi possível gerar ELI5: {e}")
 
     # ------------------- Anchor -------------------
-    # Esta seção foi removida conforme a solicitação do usuário.
-    # O código anterior foi removido daqui para evitar o uso do Anchor.
+    try:
+        st.markdown("**Explicação com Anchor (Regras Mínimas):**")
+        def predict_fn_anchor(arr2d):
+            df = pd.DataFrame(arr2d, columns=feature_names)
+            scaled = scaler.transform(df)
+            return lr_model.predict(scaled)
+
+        anchor_explainer = anchor_tabular.AnchorTabularExplainer(
+            class_names=['Recusado', 'Aprovado'],
+            feature_names=feature_names,
+            train_data=X_train_df.values
+        )
+        anchor_exp = anchor_explainer.explain_instance(
+            X_input_df.values[0], predict_fn_anchor, threshold=0.95
+        )
+        
+        rule = " E ".join(anchor_exp.names())
+        st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
+        st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
+        exp_rec_anchor = f"Regra Anchor: {rule}"
+
+    except Exception as e:
+        st.warning(f"Não foi possível gerar a explicação Anchor: {e}")
 
     # ------------------- Feedback do LLM -------------------
     if client:
@@ -235,15 +276,15 @@ Aqui estão as explicações técnicas sobre os fatores que mais influenciaram e
 - **SHAP:** {exp_rec_shap}
 - **LIME:** {exp_rec_lime}
 
-Com base nessas informações, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
+Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Utilize as informações do SHAP e do LIME. Detalhe cada um dos fatores e suas contribuições. O valor de contribuição SHAP é um número que representa a força do impacto, não é um valor monetário. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores e as regras do SHAP e do LIME. Detalhe cada um dos fatores, incluindo seus valores e como eles influenciaram a decisão. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
-2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas reforce os pontos positivos.
+2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro.
 
 3.  **Estrutura:** Divida sua resposta em tópicos, como "Análise do seu Perfil Financeiro" e "Recomendações".
 
-Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de palavras.
+Seja direto, empático e construtivo. Não inclua informações sobre a explicação do Anchor no seu feedback.
 """
         try:
             with st.spinner("Gerando feedback personalizado..."):

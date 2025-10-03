@@ -173,7 +173,7 @@ with col3:
         ULTIMO_SALARIO = 0.0
 
     #QT_CARROS_input = st.multiselect('Qtd. Carros', [0,1,2,3,4,5], default=[1])
-    QT_CARROS_input = st.number_input('Qtd. Imóveis', min_value=0, value=1)
+    QT_CARROS_input = st.number_input('Qtd. Carros', min_value=0, value=1)
     VALOR_TABELA_CARROS = st.slider('Valor Tabela Carros (R$)', 0, 200000, 45000, step=5000)
     FAIXA_ETARIA = st.radio('Faixa Etária', faixas_etarias, index=2)
 

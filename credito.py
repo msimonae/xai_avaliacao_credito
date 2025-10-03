@@ -65,7 +65,7 @@ def get_humanized_lime_rules(lime_features, y_pred, input_values):
         match_single_le = re.search(r'(\S+)\s*<=\s*(\d+\.?\d*)', rule)
         if match_single_le:
             value = float(match_single_le.group(2))
-            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS']:
+            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
                 rule_text = f"Ter {translated_name} igual ou menor que {format_currency(value)}"
             else:
                 rule_text = f"Ter {translated_name} igual ou menor que {value}"

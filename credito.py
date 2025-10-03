@@ -353,7 +353,7 @@ Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável pa
 
 2.  **Fale sobre "pontos positivos" se "Aprovado", "pontos a melhorar" se "Reprovado" e crie as recomendações de todos os fatores com base na explicação do **LIME (Regras de decisão):**{exp_rec_lime}, "seu perfil financeiro", etc.
 
-3.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
+3.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça pelo menos 3 até 15 dicas práticas se houver para que o cliente pode melhorar seu perfil financeiro para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
 
 Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de palavras. Não inclua informações sobre a explicação do Anchor no seu feedback.
 """

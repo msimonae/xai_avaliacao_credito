@@ -301,10 +301,10 @@ if st.button("Verificar Crédito"):
         eli5_expl = eli5.explain_prediction(lr_model, X_input_df.iloc[0], feature_names=feature_names)
         eli5_neg = [w.feature for w in eli5_expl.targets[0].feature_weights.neg]
         eli5_pos = [w.feature for w in eli5_expl.targets[0].feature_weights.pos]
-        st.write(f"**ELI5 – Negativos:** {eli5_neg}")
-        st.write(f"**ELI5 – Positivos:** {eli5_pos}")
+        # st.write(f"**ELI5 – Negativos:** {eli5_neg}")
+        # st.write(f"**ELI5 – Positivos:** {eli5_pos}")
 
-        st.markdown("**Detalhe ELI5:**")
+        # st.markdown("**Detalhe ELI5:**")
         html_eli5 = format_as_html(eli5_expl)
         st.components.v1.html(html_eli5, height=420, scrolling=True)
     except Exception as e:
@@ -312,7 +312,7 @@ if st.button("Verificar Crédito"):
 
     # ------------------- Anchor -------------------
     try:
-        st.markdown("**Explicação com Anchor (Regras Mínimas):**")
+        #st.markdown("**Explicação com Anchor (Regras Mínimas):**")
         def predict_fn_anchor(arr2d):
             df = pd.DataFrame(arr2d, columns=feature_names)
             scaled = scaler.transform(df)
@@ -328,8 +328,8 @@ if st.button("Verificar Crédito"):
         )
         
         rule = " E ".join(anchor_exp.names())
-        st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
-        st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
+        #st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
+        #st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
         exp_rec_anchor = f"Regra Anchor: {rule}"
 
     except Exception as e:

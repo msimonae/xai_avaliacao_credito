@@ -133,15 +133,27 @@ with col1:
     ESCOLARIDADE = st.selectbox('Escolaridade', escolaridades, index=1)
     ESTADO_CIVIL = st.selectbox('Estado Civil', estados_civis, index=0)
     QT_FILHOS = st.number_input('Qtd. Filhos', min_value=0, value=1)
+    #CASA_PROPRIA = st.radio('Casa Própria?', ['Sim', 'Não'], index=0)
+with col2:   
     CASA_PROPRIA = st.radio('Casa Própria?', ['Sim', 'Não'], index=0)
-with col2:
-    QT_IMOVEIS = st.number_input('Qtd. Imóveis', min_value=0, value=1)
-
-    VL_IMOVEIS_str = st.text_input('Valor dos Imóveis (R$)', value="100000")
-    try:
-        VL_IMOVEIS = float(VL_IMOVEIS_str.replace("R$", "").replace(".", "").replace(",", "."))
-    except:
+    if CASA_PROPRIA == 'Sim':
+        QT_IMOVEIS = st.number_input('Qtd. Imóveis', min_value=0, value=1)
+        VL_IMOVEIS_str = st.text_input('Valor dos Imóveis (R$)', value="100000")
+        try:
+            VL_IMOVEIS = float(VL_IMOVEIS_str.replace("R$", "").replace(".", "").replace(",", "."))
+        except:
+            VL_IMOVEIS = 0.0
+    else:
+        QT_IMOVEIS = 0
         VL_IMOVEIS = 0.0
+
+    # QT_IMOVEIS = st.number_input('Qtd. Imóveis', min_value=0, value=1)
+
+    # VL_IMOVEIS_str = st.text_input('Valor dos Imóveis (R$)', value="100000")
+    # try:
+    #     VL_IMOVEIS = float(VL_IMOVEIS_str.replace("R$", "").replace(".", "").replace(",", "."))
+    # except:
+    #     VL_IMOVEIS = 0.0
 
     OUTRA_RENDA = st.radio('Outra renda?', ['Sim', 'Não'], index=1)
 

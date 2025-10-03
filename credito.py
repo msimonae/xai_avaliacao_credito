@@ -224,10 +224,10 @@ if st.button("Verificar Crédito"):
         contribs = sv_scaled.values[0]
         if y_pred == 0:
             idx = np.argsort(contribs)[:3]
-            st.write("**Principais fatores que influenciaram a recusa:**")
+            st.write("**SHAP - Principais fatores que influenciaram a recusa:**")
         else:
             idx = np.argsort(contribs)[-3:]
-            st.write("**Principais fatores que influenciaram a aprovação:**")
+            st.write("**SHAP - Principais fatores que influenciaram a aprovação:**")
 
         razoes_shap_list = []
         for j in idx:

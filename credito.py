@@ -16,6 +16,78 @@ import re
 def format_currency(value):
     return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
+# Função para humanizar as regras do LIME
+def get_humanized_lime_rules(lime_features, y_pred, input_values):
+    humanized_rules = []
+    
+    # Dicionário para traduzir nomes de features
+    feature_translations = {
+        'VL_IMOVEIS': 'o valor dos seus imóveis',
+        'VALOR_TABELA_CARROS': 'o valor de tabela dos seus carros',
+        'TEMPO_ULTIMO_EMPREGO_MESES': 'o seu tempo de último emprego',
+        'ULTIMO_SALARIO': 'o seu último salário',
+        'QT_CARROS': 'a quantidade de carros',
+    }
+    
+    # Define o impacto baseado no resultado da predição para garantir a consistência
+    # Se a predição é 'Recusado' (y_pred == 0), todos os impactos são negativos.
+    # Caso contrário, o impacto segue a contribuição do LIME.
+    if y_pred == 0:
+        overall_impact = "negativo"
+    else:
+        overall_impact = "positivo"
+
+    for rule, contrib in lime_features:
+        rule_text = rule
+        impact = overall_impact
+        
+        # Extrai o nome da feature para contextualizar o valor de entrada
+        match = re.search(r'([a-zA-Z_]+)', rule)
+        feature_name = match.group(1) if match else None
+        
+        input_value = input_values.get(feature_name, 'não disponível')
+        
+        # Formata o valor de entrada
+        if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS']:
+            input_value_str = format_currency(input_value)
+        else:
+            input_value_str = str(input_value)
+        
+        # Humaniza a regra
+        translated_name = feature_translations.get(feature_name, feature_name)
+        
+        # Padrão para regras com faixa de valores
+        match_range = re.search(r'(\d+\.?\d*)\s*<\s*(\S+)\s*<=\s*(\d+\.?\d*)', rule)
+        if match_range:
+            lower_val = float(match_range.group(1))
+            upper_val = float(match_range.group(3))
+            if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO']:
+                lower_val_str = format_currency(lower_val)
+                upper_val_str = format_currency(upper_val)
+                rule_text = f"Ter {translated_name} entre {lower_val_str} e {upper_val_str}"
+            else:
+                rule_text = f"Ter {translated_name} entre {lower_val} e {upper_val}"
+        
+        # Padrão para regras de menor ou igual
+        match_single_le = re.search(r'(\S+)\s*<=\s*(\d+\.?\d*)', rule)
+        if match_single_le:
+            value = float(match_single_le.group(2))
+            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS']:
+                rule_text = f"Ter {translated_name} igual ou menor que {format_currency(value)}"
+            else:
+                rule_text = f"Ter {translated_name} igual ou menor que {value}"
+        
+        # Padrão para regras de igualdade
+        match_equal = re.search(r'(\S+)\s*=\s*(\S+)', rule)
+        if match_equal:
+            value = match_equal.group(2)
+            rule_text = f"Ter {translated_name} igual a {value}"
+
+        # Combina a regra humanizada e o impacto na frase
+        humanized_rules.append(f"{rule_text}. Sua entrada de {input_value_str} se encaixa nesta regra e teve um impacto {impact} na decisão.")
+        
+    return "\n".join(humanized_rules)
+
 st.set_page_config(page_title="Crédito com XAI", layout="wide")
 
 # --- Centralizar a configuração da API Key e a criação do cliente ---
@@ -113,15 +185,15 @@ if st.button("Verificar Crédito"):
     estado_civil_map = {label: i for i, label in enumerate(estados_civis)}
     faixa_etaria_map = {label: i for i, label in enumerate(faixas_etarias)}
     
-    novos_dados = [
-        uf_map[UF], escolaridade_map[ESCOLARIDADE], estado_civil_map[ESTADO_CIVIL], QT_FILHOS,
-        1 if CASA_PROPRIA == 'Sim' else 0, QT_IMOVEIS, VL_IMOVEIS,
-        1 if OUTRA_RENDA == 'Sim' else 0, OUTRA_RENDA_VALOR, TEMPO_ULTIMO_EMPREGO_MESES,
-        1 if TRABALHANDO_ATUALMENTE else 0, ULTIMO_SALARIO, len(QT_CARROS_input),
-        VALOR_TABELA_CARROS, faixa_etaria_map[FAIXA_ETARIA]
-    ]
-
-    X_input_df = pd.DataFrame([novos_dados], columns=feature_names)
+    novos_dados_dict = {
+        'UF': uf_map[UF], 'ESCOLARIDADE': escolaridade_map[ESCOLARIDADE], 'ESTADO_CIVIL': estado_civil_map[ESTADO_CIVIL], 'QT_FILHOS': QT_FILHOS,
+        'CASA_PROPRIA': 1 if CASA_PROPRIA == 'Sim' else 0, 'QT_IMOVEIS': QT_IMOVEIS, 'VL_IMOVEIS': VL_IMOVEIS,
+        'OUTRA_RENDA': 1 if OUTRA_RENDA == 'Sim' else 0, 'OUTRA_RENDA_VALOR': OUTRA_RENDA_VALOR, 'TEMPO_ULTIMO_EMPREGO_MESES': TEMPO_ULTIMO_EMPREGO_MESES,
+        'TRABALHANDO_ATUALMENTE': 1 if TRABALHANDO_ATUALMENTE else 0, 'ULTIMO_SALARIO': ULTIMO_SALARIO, 'QT_CARROS': len(QT_CARROS_input),
+        'VALOR_TABELA_CARROS': VALOR_TABELA_CARROS, 'FAIXA_ETARIA': faixa_etaria_map[FAIXA_ETARIA]
+    }
+    
+    X_input_df = pd.DataFrame([novos_dados_dict], columns=feature_names)
     X_input_scaled = scaler.transform(X_input_df)
     X_input_scaled_df = pd.DataFrame(X_input_scaled, columns=feature_names)
 
@@ -199,29 +271,7 @@ if st.button("Verificar Crédito"):
         lime_features = lime_exp.as_list()
         
         # --- CORREÇÃO: Humanizamos o LIME aqui no Python, garantindo a formatação e contextualização ---
-        exp_rec_lime_list = []
-        for rule, contrib in lime_features:
-            rule_text = rule
-            impact = "negativo" if contrib < 0 else "positivo"
-
-            # Contextualização com os valores de entrada
-            match_feature = re.search(r'([a-zA-Z_]+)', rule)
-            feature_name = match_feature.group(1) if match_feature else None
-            
-            input_value = X_input_df.iloc[0].get(feature_name, None)
-            
-            # Ajuste da frase para o LLM
-            if feature_name and input_value is not None:
-                if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
-                    input_value_str = format_currency(input_value)
-                else:
-                    input_value_str = str(input_value)
-                
-                exp_rec_lime_list.append(f"Regra LIME: '{rule}'. Valor de entrada do cliente para esta regra: '{input_value_str}'. Impacto: '{impact}'.")
-            else:
-                exp_rec_lime_list.append(f"Regra LIME: '{rule}'. Impacto: '{impact}'.")
-
-        exp_rec_lime = "\n".join(exp_rec_lime_list)
+        exp_rec_lime = get_humanized_lime_rules(lime_features, y_pred, novos_dados_dict)
         
         st.write(f"**LIME – Principais fatores:** {lime_features}")
         

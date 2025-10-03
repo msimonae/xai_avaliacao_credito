@@ -349,11 +349,11 @@ Aqui estão as explicações técnicas sobre os fatores que mais influenciaram e
 
 Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores do SHAP e **liste em bullet points** as regras do LIME. Para cada item da lista do LIME, explique em linguagem natural como a condição do fator influenciou o resultado. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+1.  **Análise do Resultado:** De forma amigável e empática, explique em 3-5 frases os principais motivos que levaram à decisão de '{resultado_texto}'. Mencione os fatores do SHAP e **liste em bullet points** as regras do LIME. Para cada item da lista do LIME, explique em linguagem natural como a condição do fator influenciou o resultado. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
-2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas sobre como o cliente pode melhorar seu perfil financeiro para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
+2.  **Fale sobre "pontos positivos", "pontos a melhorar", "seu perfil financeiro", etc.
 
-3.  **Estrutura:** Divida sua resposta em tópicos, como "Análise do seu Perfil Financeiro" e "Recomendações".
+3.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
 
 Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de palavras. Não inclua informações sobre a explicação do Anchor no seu feedback.
 """

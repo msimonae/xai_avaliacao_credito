@@ -17,9 +17,9 @@ def format_currency(value):
     return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # Função para humanizar as regras do LIME
-def get_humanized_lime_rules(lime_features, y_pred, input_values):
+def get_humanized_lime_rules(lime_features, input_values):
     humanized_rules = []
-    
+
     # Dicionário para traduzir nomes de features
     feature_translations = {
         'VL_IMOVEIS': 'o valor dos seus imóveis',
@@ -28,63 +28,56 @@ def get_humanized_lime_rules(lime_features, y_pred, input_values):
         'ULTIMO_SALARIO': 'o seu último salário',
         'QT_CARROS': 'a quantidade de carros',
     }
-    
-    # Define o impacto baseado no resultado da predição para garantir a consistência
-    # Se a predição é 'Recusado' (y_pred == 0), todos os impactos são negativos.
-    # Caso contrário, o impacto segue a contribuição do LIME.
-    if y_pred == 0:
-        overall_impact = "negativo"
-    else:
-        overall_impact = "positivo"
 
     for rule, contrib in lime_features:
-        rule_text = rule
-        impact = overall_impact
+        # Padrão para regras com faixa de valores (e.g., '0.00 < VL_IMOVEIS <= 185000.00')
+        match_range = re.search(r'(\S+)\s*<\s*(\S+)\s*<=\s*(\S+)', rule)
+        # Padrão para regras com um único valor (e.g., 'TEMPO_ULTIMO_EMPREGO_MESES <= 14.00')
+        match_single = re.search(r'(\S+)\s*(<=)\s*(\S+)', rule)
+
+        feature_name = None
+        humanized_rule_text = ""
         
-        # Extrai o nome da feature para contextualizar o valor de entrada
-        match = re.search(r'([a-zA-Z_]+)', rule)
-        feature_name = match.group(1) if match else None
-        
-        input_value = input_values.get(feature_name, 'não disponível')
-        
-        # Formata o valor de entrada
-        if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS']:
-            input_value_str = format_currency(input_value)
-        else:
-            input_value_str = str(input_value)
-        
-        # Humaniza a regra
-        translated_name = feature_translations.get(feature_name, feature_name)
-        
-        # Padrão para regras com faixa de valores
-        match_range = re.search(r'(\d+\.?\d*)\s*<\s*(\S+)\s*<=\s*(\d+\.?\d*)', rule)
         if match_range:
             lower_val = float(match_range.group(1))
+            feature_name = match_range.group(2)
             upper_val = float(match_range.group(3))
+            
+            translated_name = feature_translations.get(feature_name, feature_name)
+            
             if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO']:
                 lower_val_str = format_currency(lower_val)
                 upper_val_str = format_currency(upper_val)
-                rule_text = f"Ter {translated_name} entre {lower_val_str} e {upper_val_str}"
+                humanized_rule_text = f"O valor de {translated_name} está entre {lower_val_str} e {upper_val_str}."
             else:
-                rule_text = f"Ter {translated_name} entre {lower_val} e {upper_val}"
+                humanized_rule_text = f"O valor de {translated_name} está entre {lower_val} e {upper_val}."
         
-        # Padrão para regras de menor ou igual
-        match_single_le = re.search(r'(\S+)\s*<=\s*(\d+\.?\d*)', rule)
-        if match_single_le:
-            value = float(match_single_le.group(2))
+        elif match_single:
+            feature_name = match_single.group(1)
+            operator = match_single.group(2)
+            value = float(match_single.group(3))
+            
+            translated_name = feature_translations.get(feature_name, feature_name)
+            
             if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS']:
-                rule_text = f"Ter {translated_name} igual ou menor que {format_currency(value)}"
+                value_str = format_currency(value)
             else:
-                rule_text = f"Ter {translated_name} igual ou menor que {value}"
-        
-        # Padrão para regras de igualdade
-        match_equal = re.search(r'(\S+)\s*=\s*(\S+)', rule)
-        if match_equal:
-            value = match_equal.group(2)
-            rule_text = f"Ter {translated_name} igual a {value}"
+                value_str = str(value)
+            
+            humanized_rule_text = f"O valor de {translated_name} é {operator.replace('<=', 'menor ou igual a')} {value_str}."
 
-        # Combina a regra humanizada e o impacto na frase
-        humanized_rules.append(f"{rule_text}. Sua entrada de {input_value_str} se encaixa nesta regra e teve um impacto {impact} na decisão.")
+        # Se a regra não se encaixou em nenhum padrão, retorna a original
+        if not humanized_rule_text:
+            humanized_rule_text = rule
+            
+        # Adiciona a regra humanizada e o impacto à lista
+        impact = "negativo" if contrib < 0 else "positivo"
+        input_value = input_values.get(feature_name, 'Não disponível')
+        
+        if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS']:
+            input_value = format_currency(input_value)
+        
+        humanized_rules.append(f"{humanized_rule_text} O seu valor de entrada ({input_value}) teve um impacto {impact} na decisão.")
         
     return "\n".join(humanized_rules)
 
@@ -243,9 +236,9 @@ if st.button("Verificar Crédito"):
             val = X_input_df.iloc[0, j]
             if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
                 val_str = format_currency(val)
-                razoes_shap_list.append(f"{feature_name}: contribuição de {contrib:.2f}, com um valor de {val_str}.")
+                razoes_shap_list.append(f"**{feature_name}**: contribuição de {contrib:.2f}, com um valor de {val_str}.")
             else:
-                razoes_shap_list.append(f"{feature_name}: contribuição de {contrib:.2f}, com um valor de {val}.")
+                razoes_shap_list.append(f"**{feature_name}**: contribuição de {contrib:.2f}, com um valor de {val}.")
             
         exp_rec_shap = "\n".join(razoes_shap_list)
 
@@ -271,7 +264,39 @@ if st.button("Verificar Crédito"):
         lime_features = lime_exp.as_list()
         
         # --- CORREÇÃO: Humanizamos o LIME aqui no Python, garantindo a formatação e contextualização ---
-        exp_rec_lime = get_humanized_lime_rules(lime_features, y_pred, novos_dados_dict)
+        exp_rec_lime_list = []
+        for rule, contrib in lime_features:
+            rule_text = rule
+            
+            # Ajustamos a lógica para definir o impacto
+            # Se y_pred == 0 (recusa), o impacto é negativo.
+            # Caso contrário, usamos a contribuição para determinar o impacto.
+            if y_pred == 0:
+                impact = "negativo"
+            else:
+                impact = "positivo" if contrib > 0 else "negativo"
+
+            # Extrair nome da feature para contextualizar o valor de entrada
+            match_feature = re.search(r'([a-zA-Z_]+)', rule)
+            feature_name = match_feature.group(1) if match_feature else None
+            
+            input_value = novos_dados_dict.get(feature_name, None)
+            
+            # Humaniza a regra
+            humanized_rule = rule.replace('<', 'menor que').replace('<=', 'menor ou igual a').replace('>', 'maior que').replace('>=', 'maior ou igual a').replace('==', 'igual a')
+
+            # Contextualização com o valor de entrada
+            if input_value is not None:
+                if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO']:
+                    input_value_str = format_currency(input_value)
+                else:
+                    input_value_str = str(input_value)
+                
+                exp_rec_lime_list.append(f"Regra LIME: '{humanized_rule}'. Seu valor de entrada para {feature_name} é '{input_value_str}'. Impacto: '{impact}'.")
+            else:
+                exp_rec_lime_list.append(f"Regra LIME: '{humanized_rule}'. Impacto: '{impact}'.")
+        
+        exp_rec_lime = "\n".join(exp_rec_lime_list)
         
         st.write(f"**LIME – Principais fatores:** {lime_features}")
         

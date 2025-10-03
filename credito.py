@@ -17,45 +17,81 @@ def format_currency(value):
     return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # Função para humanizar as regras do LIME
-def get_humanized_lime_rules(lime_features):
+def get_humanized_lime_rules(lime_features, y_pred, input_values):
     humanized_rules = []
-
+    
     # Dicionário para traduzir nomes de features
     feature_translations = {
-        'VL_IMOVEIS': 'O valor dos seus imóveis',
-        'VALOR_TABELA_CARROS': 'O valor de tabela dos seus carros',
-        'TEMPO_ULTIMO_EMPREGO_MESES': 'O seu tempo de último emprego',
-        'ULTIMO_SALARIO': 'O seu último salário',
-        'QT_CARROS': 'A quantidade de carros',
-        'TRABALHANDO_ATUALMENTE': 'Estar trabalhando atualmente'
+        'VL_IMOVEIS': 'o valor dos seus imóveis',
+        'VALOR_TABELA_CARROS': 'o valor de tabela dos seus carros',
+        'TEMPO_ULTIMO_EMPREGO_MESES': 'o seu tempo de último emprego',
+        'ULTIMO_SALARIO': 'o seu último salário',
+        'QT_CARROS': 'a quantidade de carros',
     }
+    
+    # Define o impacto baseado no resultado da predição para garantir a consistência
+    if y_pred == 0:
+        overall_impact = "negativo"
+    else:
+        overall_impact = "positivo"
 
     for rule, contrib in lime_features:
-        feature_name = re.search(r'([a-zA-Z_]+)', rule).group(1)
+        rule_text = rule
+        impact = overall_impact
+        
+        match = re.search(r'([a-zA-Z_]+)', rule)
+        feature_name = match.group(1) if match else None
+        
+        input_value = input_values.get(feature_name, 'não disponível')
+        
+        if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS']:
+            input_value_str = format_currency(input_value)
+        else:
+            input_value_str = str(input_value)
+        
         translated_name = feature_translations.get(feature_name, feature_name)
         
-        # Humaniza as regras
-        if ' < ' in rule and ' <= ' in rule:
-            values = re.findall(r'(\d+\.?\d*)', rule)
-            lower, upper = float(values[0]), float(values[1])
+        match_range = re.search(r'(\d+\.?\d*)\s*<\s*(\S+)\s*<=\s*(\d+\.?\d*)', rule)
+        if match_range:
+            lower_val = float(match_range.group(1))
+            upper_val = float(match_range.group(3))
             if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO']:
-                humanized_rules.append(f"{translated_name} está entre {format_currency(lower)} e {format_currency(upper)}.")
+                lower_val_str = format_currency(lower_val)
+                upper_val_str = format_currency(upper_val)
+                rule_text = f"Ter {translated_name} entre {lower_val_str} e {upper_val_str}"
             else:
-                humanized_rules.append(f"{translated_name} está entre {lower} e {upper}.")
-        elif ' <= ' in rule:
-            value = float(re.search(r'<= (\d+\.?\d*)', rule).group(1))
-            if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO']:
-                 humanized_rules.append(f"{translated_name} é menor ou igual a {format_currency(value)}.")
+                rule_text = f"Ter {translated_name} entre {lower_val} e {upper_val}"
+        
+        match_single_le = re.search(r'(\S+)\s*<=\s*(\d+\.?\d*)', rule)
+        if match_single_le:
+            value = float(match_single_le.group(2))
+            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS']:
+                rule_text = f"Ter {translated_name} igual ou menor que {format_currency(value)}"
             else:
-                 humanized_rules.append(f"{translated_name} é menor ou igual a {value}.")
-        else:
-            humanized_rules.append(f"{translated_name} atende à condição especificada.")
-    
+                rule_text = f"Ter {translated_name} igual ou menor que {value}"
+        
+        match_equal = re.search(r'(\S+)\s*=\s*(\S+)', rule)
+        if match_equal:
+            value = match_equal.group(2)
+            rule_text = f"Ter {translated_name} igual a {value}"
+
+        humanized_rules.append(f"{rule_text}. Sua entrada de {input_value_str} se encaixa nesta regra e teve um impacto {impact} na decisão.")
+        
     return "\n".join(humanized_rules)
 
 st.set_page_config(page_title="Crédito com XAI", layout="wide")
 
-# --- Centralizar a configuração da API Key e a criação do cliente ---
+# --- CORREÇÃO: Definir os mapeamentos no início do script ---
+ufs = ['SP', 'MG', 'SC', 'PR', 'RJ']
+escolaridades = ['Superior Cursando', 'Superior Completo', 'Segundo Grau Completo']
+estados_civis = ['Solteiro', 'Casado', 'Divorciado']
+faixas_etarias = ['18-25', '26-35', '36-45', '46-60', 'Acima de 60']
+
+uf_map = {label: i for i, label in enumerate(ufs)}
+escolaridade_map = {label: i for i, label in enumerate(escolaridades)}
+estado_civil_map = {label: i for i, label in enumerate(estados_civis)}
+faixa_etaria_map = {label: i for i, label in enumerate(faixas_etarias)}
+
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 
 client = None
@@ -90,11 +126,6 @@ except Exception as e:
 
 # ------------------- UI -------------------
 st.title("Previsão de Crédito e Explicabilidade (XAI)")
-
-ufs = ['SP', 'MG', 'SC', 'PR', 'RJ']
-escolaridades = ['Superior Cursando', 'Superior Completo', 'Segundo Grau Completo']
-estados_civis = ['Solteiro', 'Casado', 'Divorciado']
-faixas_etarias = ['18-25', '26-35', '36-45', '46-60', 'Acima de 60']
 
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -153,7 +184,9 @@ if st.button("Verificar Crédito"):
         'VALOR_TABELA_CARROS': VALOR_TABELA_CARROS, 'FAIXA_ETARIA': faixa_etaria_map[FAIXA_ETARIA]
     }
     
-    X_input_df = pd.DataFrame([novos_dados_dict], columns=feature_names)
+    novos_dados = list(novos_dados_dict.values())
+    
+    X_input_df = pd.DataFrame([novos_dados], columns=feature_names)
     X_input_scaled = scaler.transform(X_input_df)
     X_input_scaled_df = pd.DataFrame(X_input_scaled, columns=feature_names)
 
@@ -230,41 +263,31 @@ if st.button("Verificar Crédito"):
         )
         lime_features = lime_exp.as_list()
         
-        # --- CORREÇÃO: Humanizamos o LIME aqui no Python, garantindo a formatação e contextualização ---
         exp_rec_lime_list = []
         for rule, contrib in lime_features:
             rule_text = rule
             
-            # Ajustamos a lógica para definir o impacto
-            # Se y_pred == 0 (recusa), o impacto é negativo.
-            # Caso contrário, usamos a contribuição para determinar o impacto.
             if y_pred == 0:
                 impact = "negativo"
             else:
                 impact = "positivo" if contrib > 0 else "negativo"
 
-            # Extrair nome da feature para contextualizar o valor de entrada
             match_feature = re.search(r'([a-zA-Z_]+)', rule)
             feature_name = match_feature.group(1) if match_feature else None
             
             input_value = novos_dados_dict.get(feature_name, None)
             
-            # Humaniza a regra
-            if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO']:
-                rule_with_currency = re.sub(r'(\d+\.?\d*)', lambda m: format_currency(float(m.group(1))), rule)
-            else:
-                rule_with_currency = rule
-            
-            # Contextualização com o valor de entrada
+            humanized_rule = rule.replace('<', 'menor que').replace('<=', 'menor ou igual a').replace('>', 'maior que').replace('>=', 'maior ou igual a').replace('==', 'igual a')
+
             if input_value is not None:
                 if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO']:
                     input_value_str = format_currency(input_value)
                 else:
                     input_value_str = str(input_value)
                 
-                exp_rec_lime_list.append(f"A regra '{rule_with_currency}' teve um impacto {impact}. Seu valor de entrada foi de {input_value_str}.")
+                exp_rec_lime_list.append(f"Regra LIME: '{humanized_rule}'. Seu valor de entrada para {feature_name} é '{input_value_str}'. Impacto: '{impact}'.")
             else:
-                exp_rec_lime_list.append(f"A regra '{rule_with_currency}' teve um impacto {impact}.")
+                exp_rec_lime_list.append(f"Regra LIME: '{humanized_rule}'. Impacto: '{impact}'.")
         
         exp_rec_lime = "\n".join(exp_rec_lime_list)
         

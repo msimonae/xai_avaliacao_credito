@@ -134,7 +134,6 @@ with col1:
     QT_FILHOS = st.number_input('Qtd. Filhos', min_value=0, value=1)
     CASA_PROPRIA = st.radio('Casa Própria?', ['Sim', 'Não'], index=0)
 with col2:
-    # --- CORREÇÃO: Condição para mostrar/esconder campos de imóveis ---
     if CASA_PROPRIA == 'Sim':
         QT_IMOVEIS = st.number_input('Qtd. Imóveis', min_value=0, value=1)
         VL_IMOVEIS_str = st.text_input('Valor dos Imóveis (R$)', value="100000")
@@ -145,7 +144,6 @@ with col2:
     else:
         QT_IMOVEIS = 0
         VL_IMOVEIS = 0.0
-    # --- FIM DA CORREÇÃO ---
 
     OUTRA_RENDA = st.radio('Outra renda?', ['Sim', 'Não'], index=1)
     OUTRA_RENDA_VALOR = 0.0
@@ -172,7 +170,6 @@ with col3:
     else:
         ULTIMO_SALARIO = 0.0
 
-    #QT_CARROS_input = st.multiselect('Qtd. Carros', [0,1,2,3,4,5], default=[1])
     QT_CARROS_input = st.number_input('Qtd. Carros', min_value=0, value=1)
     VALOR_TABELA_CARROS = st.slider('Valor Tabela Carros (R$)', 0, 200000, 45000, step=5000)
     FAIXA_ETARIA = st.radio('Faixa Etária', faixas_etarias, index=2)
@@ -183,7 +180,7 @@ if st.button("Verificar Crédito"):
         'UF': uf_map[UF], 'ESCOLARIDADE': escolaridade_map[ESCOLARIDADE], 'ESTADO_CIVIL': estado_civil_map[ESTADO_CIVIL], 'QT_FILHOS': QT_FILHOS,
         'CASA_PROPRIA': 1 if CASA_PROPRIA == 'Sim' else 0, 'QT_IMOVEIS': QT_IMOVEIS, 'VL_IMOVEIS': VL_IMOVEIS,
         'OUTRA_RENDA': 1 if OUTRA_RENDA == 'Sim' else 0, 'OUTRA_RENDA_VALOR': OUTRA_RENDA_VALOR, 'TEMPO_ULTIMO_EMPREGO_MESES': TEMPO_ULTIMO_EMPREGO_MESES,
-        'TRABALHANDO_ATUALMENTE': 1 if TRABALHANDO_ATUALMENTE else 0, 'ULTIMO_SALARIO': ULTIMO_SALARIO, 'QT_CARROS': len(QT_CARROS_input),
+        'TRABALHANDO_ATUALMENTE': 1 if TRABALHANDO_ATUALMENTE else 0, 'ULTIMO_SALARIO': ULTIMO_SALARIO, 'QT_CARROS': QT_CARROS_input,
         'VALOR_TABELA_CARROS': VALOR_TABELA_CARROS, 'FAIXA_ETARIA': faixa_etaria_map[FAIXA_ETARIA]
     }
     
@@ -227,10 +224,10 @@ if st.button("Verificar Crédito"):
         contribs = sv_scaled.values[0]
         if y_pred == 0:
             idx = np.argsort(contribs)[:3]
-            st.write("**SHAP - Principais fatores que influenciaram a recusa:**")
+            st.write("**Principais fatores que influenciaram a recusa:**")
         else:
             idx = np.argsort(contribs)[-3:]
-            st.write("**SHAP - Principais fatores que influenciaram a aprovação:**")
+            st.write("**Principais fatores que influenciaram a aprovação:**")
 
         razoes_shap_list = []
         for j in idx:
@@ -305,18 +302,18 @@ if st.button("Verificar Crédito"):
         eli5_expl = eli5.explain_prediction(lr_model, X_input_df.iloc[0], feature_names=feature_names)
         eli5_neg = [w.feature for w in eli5_expl.targets[0].feature_weights.neg]
         eli5_pos = [w.feature for w in eli5_expl.targets[0].feature_weights.pos]
-        #st.write(f"**ELI5 – Negativos:** {eli5_neg}")
-        #st.write(f"**ELI5 – Positivos:** {eli5_pos}")
+        st.write(f"**ELI5 – Negativos:** {eli5_neg}")
+        st.write(f"**ELI5 – Positivos:** {eli5_pos}")
 
-        #st.markdown("**Detalhe ELI5:**")
+        st.markdown("**Detalhe ELI5:**")
         html_eli5 = format_as_html(eli5_expl)
-        #st.components.v1.html(html_eli5, height=420, scrolling=True)
+        st.components.v1.html(html_eli5, height=420, scrolling=True)
     except Exception as e:
         st.warning(f"Não foi possível gerar ELI5: {e}")
 
     # ------------------- Anchor -------------------
     try:
-        #st.markdown("**Explicação com Anchor (Regras Mínimas):**")
+        st.markdown("**Explicação com Anchor (Regras Mínimas):**")
         def predict_fn_anchor(arr2d):
             df = pd.DataFrame(arr2d, columns=feature_names)
             scaled = scaler.transform(df)
@@ -332,8 +329,8 @@ if st.button("Verificar Crédito"):
         )
         
         rule = " E ".join(anchor_exp.names())
-        #st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
-        #st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
+        st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
+        st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
         exp_rec_anchor = f"Regra Anchor: {rule}"
 
     except Exception as e:

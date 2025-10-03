@@ -65,7 +65,7 @@ def get_humanized_lime_rules(lime_features, y_pred, input_values):
         match_single_le = re.search(r'(\S+)\s*<=\s*(\d+\.?\d*)', rule)
         if match_single_le:
             value = float(match_single_le.group(2))
-            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
+            if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS']:
                 rule_text = f"Ter {translated_name} igual ou menor que {format_currency(value)}"
             else:
                 rule_text = f"Ter {translated_name} igual ou menor que {value}"
@@ -81,7 +81,6 @@ def get_humanized_lime_rules(lime_features, y_pred, input_values):
 
 st.set_page_config(page_title="Crédito com XAI", layout="wide")
 
-# --- CORREÇÃO: Definir os mapeamentos no início do script ---
 ufs = ['SP', 'MG', 'SC', 'PR', 'RJ']
 escolaridades = ['Superior Cursando', 'Superior Completo', 'Segundo Grau Completo']
 estados_civis = ['Solteiro', 'Casado', 'Divorciado']
@@ -133,9 +132,9 @@ with col1:
     ESCOLARIDADE = st.selectbox('Escolaridade', escolaridades, index=1)
     ESTADO_CIVIL = st.selectbox('Estado Civil', estados_civis, index=0)
     QT_FILHOS = st.number_input('Qtd. Filhos', min_value=0, value=1)
-    #CASA_PROPRIA = st.radio('Casa Própria?', ['Sim', 'Não'], index=0)
-with col2:   
     CASA_PROPRIA = st.radio('Casa Própria?', ['Sim', 'Não'], index=0)
+with col2:
+    # --- CORREÇÃO: Condição para mostrar/esconder campos de imóveis ---
     if CASA_PROPRIA == 'Sim':
         QT_IMOVEIS = st.number_input('Qtd. Imóveis', min_value=0, value=1)
         VL_IMOVEIS_str = st.text_input('Valor dos Imóveis (R$)', value="100000")
@@ -146,17 +145,9 @@ with col2:
     else:
         QT_IMOVEIS = 0
         VL_IMOVEIS = 0.0
-
-    # QT_IMOVEIS = st.number_input('Qtd. Imóveis', min_value=0, value=1)
-
-    # VL_IMOVEIS_str = st.text_input('Valor dos Imóveis (R$)', value="100000")
-    # try:
-    #     VL_IMOVEIS = float(VL_IMOVEIS_str.replace("R$", "").replace(".", "").replace(",", "."))
-    # except:
-    #     VL_IMOVEIS = 0.0
+    # --- FIM DA CORREÇÃO ---
 
     OUTRA_RENDA = st.radio('Outra renda?', ['Sim', 'Não'], index=1)
-
     OUTRA_RENDA_VALOR = 0.0
     if OUTRA_RENDA == 'Sim':
         OUTRA_RENDA_VALOR_str = st.text_input('Valor Outra Renda (R$)', value="2000")
@@ -164,7 +155,6 @@ with col2:
             OUTRA_RENDA_VALOR = float(OUTRA_RENDA_VALOR_str.replace("R$", "").replace(".", "").replace(",", "."))
         except:
             OUTRA_RENDA_VALOR = 0.0
-
     TEMPO_ULTIMO_EMPREGO_MESES = st.slider('Tempo Últ. Emprego (meses)', 0, 240, 5)
 
 with col3:
@@ -182,8 +172,7 @@ with col3:
     else:
         ULTIMO_SALARIO = 0.0
 
-    #QT_CARROS_input = st.multiselect('Qtd. Carros', [0,1,2,3,4,5], default=[1])
-    QT_CARROS_input = st.number_input('Qtd. Carros', min_value=0, value=1)
+    QT_CARROS_input = st.multiselect('Qtd. Carros', [0,1,2,3,4,5], default=[1])
     VALOR_TABELA_CARROS = st.slider('Valor Tabela Carros (R$)', 0, 200000, 45000, step=5000)
     FAIXA_ETARIA = st.radio('Faixa Etária', faixas_etarias, index=2)
 
@@ -276,6 +265,7 @@ if st.button("Verificar Crédito"):
         )
         lime_features = lime_exp.as_list()
         
+        # --- CORREÇÃO: Humanizamos o LIME aqui no Python, garantindo a formatação e contextualização ---
         exp_rec_lime_list = []
         for rule, contrib in lime_features:
             rule_text = rule
@@ -314,18 +304,18 @@ if st.button("Verificar Crédito"):
         eli5_expl = eli5.explain_prediction(lr_model, X_input_df.iloc[0], feature_names=feature_names)
         eli5_neg = [w.feature for w in eli5_expl.targets[0].feature_weights.neg]
         eli5_pos = [w.feature for w in eli5_expl.targets[0].feature_weights.pos]
-        # st.write(f"**ELI5 – Negativos:** {eli5_neg}")
-        # st.write(f"**ELI5 – Positivos:** {eli5_pos}")
+        st.write(f"**ELI5 – Negativos:** {eli5_neg}")
+        st.write(f"**ELI5 – Positivos:** {eli5_pos}")
 
-        # st.markdown("**Detalhe ELI5:**")
+        st.markdown("**Detalhe ELI5:**")
         html_eli5 = format_as_html(eli5_expl)
-        #st.components.v1.html(html_eli5, height=420, scrolling=True)
+        st.components.v1.html(html_eli5, height=420, scrolling=True)
     except Exception as e:
         st.warning(f"Não foi possível gerar ELI5: {e}")
 
     # ------------------- Anchor -------------------
     try:
-        #st.markdown("**Explicação com Anchor (Regras Mínimas):**")
+        st.markdown("**Explicação com Anchor (Regras Mínimas):**")
         def predict_fn_anchor(arr2d):
             df = pd.DataFrame(arr2d, columns=feature_names)
             scaled = scaler.transform(df)
@@ -341,8 +331,8 @@ if st.button("Verificar Crédito"):
         )
         
         rule = " E ".join(anchor_exp.names())
-        #st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
-        #st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
+        st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
+        st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
         exp_rec_anchor = f"Regra Anchor: {rule}"
 
     except Exception as e:
@@ -362,11 +352,11 @@ Aqui estão as explicações técnicas sobre os fatores que mais influenciaram e
 
 Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique em 3-5 frases os principais motivos que levaram à decisão de '{resultado_texto}'. Mencione os fatores do SHAP e **liste em bullet points** as regras do LIME. Para cada item da lista do LIME, explique em linguagem natural como a condição do fator influenciou o resultado. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores do SHAP e **liste em bullet points** as regras do LIME. Para cada item da lista do LIME, explique em linguagem natural como a condição do fator influenciou o resultado. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
-2.  **Fale sobre "pontos positivos" se "Aprovado", "pontos a melhorar" se "Reprovado" e crie as recomendações de todos os fatores com base na explicação do **LIME (Regras de decisão):**{exp_rec_lime}, "seu perfil financeiro", etc.
+2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas sobre como o cliente pode melhorar seu perfil.
 
-3.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça pelo menos 3 até 15 dicas práticas se houver para que o cliente pode melhorar seu perfil financeiro para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
+3.  **Estrutura:** Divida sua resposta em tópicos, como "Análise do seu Perfil Financeiro" e "Recomendações".
 
 Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de palavras. Não inclua informações sobre a explicação do Anchor no seu feedback.
 """

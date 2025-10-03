@@ -306,9 +306,9 @@ if st.button("Verificar Crédito"):
 
         # st.markdown("**Detalhe ELI5:**")
         html_eli5 = format_as_html(eli5_expl)
-        st.components.v1.html(html_eli5, height=420, scrolling=True)
+        #st.components.v1.html(html_eli5, height=420, scrolling=True)
     except Exception as e:
-        st.warning(f"Não foi possível gerar ELI5: {e}")
+        #st.warning(f"Não foi possível gerar ELI5: {e}")
 
     # ------------------- Anchor -------------------
     try:

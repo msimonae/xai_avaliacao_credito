@@ -351,7 +351,7 @@ Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável pa
 
 1.  **Análise do Resultado:** De forma amigável e empática, explique em 3-5 frases os principais motivos que levaram à decisão de '{resultado_texto}'. Mencione os fatores do SHAP e **liste em bullet points** as regras do LIME. Para cada item da lista do LIME, explique em linguagem natural como a condição do fator influenciou o resultado. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
-2.  **Fale sobre "pontos positivos" se "Aprovado", "pontos a melhorar" se "Reprovado", "seu perfil financeiro", etc.
+2.  **Fale sobre "pontos positivos" se "Aprovado", "pontos a melhorar" se "Reprovado" e analise com base no **LIME (Regras de decisão):**{exp_rec_lime}, "seu perfil financeiro", etc.
 
 3.  **Recomendações (se o resultado for 'Recusado'):** Se o crédito foi recusado, forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, apenas parabenize o cliente e reforce os pontos positivos.
 

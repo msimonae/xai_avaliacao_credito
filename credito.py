@@ -249,11 +249,16 @@ if st.button("Verificar Crédito"):
     try:
         st.markdown("**Explicação com SHAP (Impacto das Features na probabilidade de aprovação):**")
         # Explicador que foca na probabilidade da classe 1 (aprovado)
-        explainer = shap.Explainer(lambda x: lr_model.predict_proba(x)[:, 1], X_train_scaled)
-        shap_values = explainer(X_input_scaled)
+        # Criação do explainer
+        explainer = shap.Explainer(lr_model, X_train_df, feature_names=feature_names)
+        #explainer = shap.Explainer(lambda x: lr_model.predict_proba(x)[:, 1], X_train_scaled)
+        #shap_values = explainer(X_input_scaled)
+        shap_values = explainer(X_input_df)
         # waterfall plot
         fig = plt.figure()
-        shap.plots.waterfall(shap_values[0], show=False, max_display=10)
+        # Gráfico Waterfall (com nomes corretos)
+        shap.plots.waterfall(shap_values[0], show=True)
+        #shap.plots.waterfall(shap_values[0], show=False, max_display=10)
         st.pyplot(fig)
         plt.close(fig)
 

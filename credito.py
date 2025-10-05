@@ -303,6 +303,12 @@ if st.button("Verificar Crédito"):
         )
         lime_features = lime_exp.as_list()  # lista de (rule, contrib)
 
+        # Exibição BRUTA no Streamlit
+        st.markdown("**LIME – Principais fatores (regras brutas):**")
+        for rule, contrib in lime_features:
+            st.write(f"- Regra LIME: `{rule}`, contribuição: {contrib:.4f}")
+
+        # Versão humanizada (apenas para o LLM)
         feature_translations = {
             'VL_IMOVEIS': 'o valor dos seus imóveis',
             'VALOR_TABELA_CARROS': 'o valor de tabela dos seus carros',
@@ -311,9 +317,9 @@ if st.button("Verificar Crédito"):
             'QT_CARROS': 'a quantidade de carros',
         }
 
-        exp_rec_lime_list = []
+        exp_rec_lime_human = []
         for rule, contrib in lime_features:
-            # decide impacto relative ao y_pred e ao sinal da contribuição
+            # impacto
             if int(y_pred) == 0:
                 impact = "negativo"
             else:
@@ -321,17 +327,61 @@ if st.button("Verificar Crédito"):
 
             human_rule, input_val_str = humanize_lime_rule(rule, feature_translations, novos_dados_dict)
             if input_val_str:
-                exp_rec_lime_list.append(f"Regra LIME: '{human_rule}'. Seu valor: {input_val_str}. Impacto: {impact}.")
+                exp_rec_lime_human.append(f"Regra LIME: '{human_rule}'. Seu valor: {input_val_str}. Impacto: {impact}.")
             else:
-                exp_rec_lime_list.append(f"Regra LIME: '{human_rule}'. Impacto: {impact}.")
+                exp_rec_lime_human.append(f"Regra LIME: '{human_rule}'. Impacto: {impact}.")
 
-        exp_rec_lime = "\n".join(exp_rec_lime_list)
-        st.markdown("**LIME – Principais fatores (humanizados):**")
-        for item in exp_rec_lime_list:
-            st.write(f"- {item}")
+        # Para o LLM
+        exp_rec_lime = "\n".join(exp_rec_lime_human)
 
     except Exception as e:
         st.warning(f"Não foi possível gerar LIME: {e}")
+
+    
+    # # ------------------- LIME ------------------- #
+    # try:
+    #     lime_explainer = lime.lime_tabular.LimeTabularExplainer(
+    #         training_data=X_train_df.values,
+    #         feature_names=feature_names,
+    #         class_names=['Recusado', 'Aprovado'],
+    #         mode='classification'
+    #     )
+    #     lime_exp = lime_explainer.explain_instance(
+    #         X_input_df.values[0],
+    #         lambda x: lr_model.predict_proba(scaler.transform(pd.DataFrame(x, columns=feature_names))),
+    #         num_features=5
+    #     )
+    #     lime_features = lime_exp.as_list()  # lista de (rule, contrib)
+
+    #     feature_translations = {
+    #         'VL_IMOVEIS': 'o valor dos seus imóveis',
+    #         'VALOR_TABELA_CARROS': 'o valor de tabela dos seus carros',
+    #         'TEMPO_ULTIMO_EMPREGO_MESES': 'o seu tempo de último emprego (meses)',
+    #         'ULTIMO_SALARIO': 'o seu último salário',
+    #         'QT_CARROS': 'a quantidade de carros',
+    #     }
+
+    #     exp_rec_lime_list = []
+    #     for rule, contrib in lime_features:
+    #         # decide impacto relative ao y_pred e ao sinal da contribuição
+    #         if int(y_pred) == 0:
+    #             impact = "negativo"
+    #         else:
+    #             impact = "positivo" if contrib > 0 else "negativo"
+
+    #         human_rule, input_val_str = humanize_lime_rule(rule, feature_translations, novos_dados_dict)
+    #         if input_val_str:
+    #             exp_rec_lime_list.append(f"Regra LIME: '{human_rule}'. Seu valor: {input_val_str}. Impacto: {impact}.")
+    #         else:
+    #             exp_rec_lime_list.append(f"Regra LIME: '{human_rule}'. Impacto: {impact}.")
+
+    #     exp_rec_lime = "\n".join(exp_rec_lime_list)
+    #     st.markdown("**LIME – Principais fatores (humanizados):**")
+    #     for item in exp_rec_lime_list:
+    #         st.write(f"- {item}")
+
+    # except Exception as e:
+    #     st.warning(f"Não foi possível gerar LIME: {e}")
 
     # ------------------- ELI5 ------------------- #
     try:

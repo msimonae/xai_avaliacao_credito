@@ -47,67 +47,129 @@ def humanize_lime_rule(rule, feature_translations, input_values):
     Recebe uma string de regra do LIME (ex.: 'ULTIMO_SALARIO <= 3900.0')
     e retorna texto humanizado com valores formatados.
     """
-    # traduz nomes de features
-    # quebra conjunções (LIME costuma retornar expressões simples, mas tratamos & e " and ")
     clauses = re.split(r'\s+and\s+|\s*&\s*', rule, flags=re.IGNORECASE)
     human_clauses = []
+    
+    # Mapeamento de operadores para texto
+    op_map = {
+        '<=': 'igual ou menor que',
+        '>=': 'igual ou maior que',
+        '>': 'maior que',
+        '<': 'menor que',
+        '=': 'igual a',
+        '==': 'igual a'
+    }
 
     for c in clauses:
         c = c.strip().strip('()')
-        # padrões possíveis:
-        # 1) a < feature <= b  (ex: 0.0 < VALOR <= 185000.0)
+        
+        # Padrões mais robustos, capturando o operador
+        m = re.match(r'([A-Za-z_][A-Za-z0-9_]*)\s*(<=|>=|==|!=|>|<)\s*["\']?([^"\']+)["\']?', c)
         m_range = re.match(r'([-+]?\d*\.?\d+)\s*<\s*([A-Za-z_][A-Za-z0-9_]*)\s*<=\s*([-+]?\d*\.?\d+)', c)
-        m_range2 = re.match(r'([A-Za-z_][A-Za-z0-9_]*)\s*>\s*([-+]?\d*\.?\d+)\s*and\s*([A-Za-z_][A-Za-z0-9_]*)\s*<=\s*([-+]?\d*\.?\d+)', c, flags=re.IGNORECASE)
-        m_le = re.match(r'([A-Za-z_][A-Za-z0-9_]*)\s*<=\s*([-+]?\d*\.?\d+)', c)
-        m_ge = re.match(r'([A-Za-z_][A-Za-z0-9_]*)\s*>=\s*([-+]?\d*\.?\d+)', c)
-        m_gt = re.match(r'([A-Za-z_][A-Za-z0-9_]*)\s*>\s*([-+]?\d*\.?\d+)', c)
-        m_eq = re.match(r'([A-Za-z_][A-Za-z0-9_]*)\s*==?\s*["\']?([^"\']+)["\']?', c)
-
-        # detecta feature para decidir formato monetário
+        
+        # Detecta feature para decidir formato monetário
         feature_name_search = re.search(r'([A-Za-z_][A-Za-z0-9_]*)', c)
         feature_name = feature_name_search.group(1) if feature_name_search else None
+        
         is_money = feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO', 'OUTRA_RENDA_VALOR']
-
+        
         translated = feature_translations.get(feature_name, feature_name if feature_name else c)
 
         if m_range:
             a, f, b = m_range.group(1), m_range.group(2), m_range.group(3)
-            human_clauses.append(f"{translated} entre {_format_number_in_rule(a, is_money)} e {_format_number_in_rule(b, is_money)}")
-        elif m_range2:
-            # fallback raro - compõe manualmente
-            _, a, _, b = m_range2.groups()
-            human_clauses.append(f"{translated} entre {_format_number_in_rule(a, is_money)} e {_format_number_in_rule(b, is_money)}")
-        elif m_le:
-            f, val = m_le.group(1), m_le.group(2)
-            human_clauses.append(f"{translated} igual ou menor que {_format_number_in_rule(val, is_money)}")
-        elif m_ge:
-            f, val = m_ge.group(1), m_ge.group(2)
-            human_clauses.append(f"{translated} igual ou maior que {_format_number_in_rule(val, is_money)}")
-        elif m_gt:
-            f, val = m_gt.group(1), m_gt.group(2)
-            human_clauses.append(f"{translated} maior que {_format_number_in_rule(val, is_money)}")
-        elif m_eq:
-            f, val = m_eq.group(1), m_eq.group(2)
-            human_clauses.append(f"{translated} igual a {val}")
+            val_a = _format_number_in_rule(a, is_money)
+            val_b = _format_number_in_rule(b, is_money)
+            human_clauses.append(f"{translated} está entre {val_a} e {val_b}")
+        elif m:
+            f, op, val = m.group(1), m.group(2), m.group(3)
+            op_text = op_map.get(op, 'igual a')
+            val_fmt = _format_number_in_rule(val, is_money)
+            human_clauses.append(f"{translated} é {op_text} {val_fmt}")
         else:
-            # fallback: substitui números por formatados se existirem
-            nums = re.findall(r'[-+]?\d*\.?\d+', c)
-            c_fmt = c
-            for n in nums:
-                c_fmt = c_fmt.replace(n, _format_number_in_rule(n, is_money))
-            human_clauses.append(c_fmt)
+            # Fallback para regras complexas ou quebras de linha
+            human_clauses.append(c)
 
     humanized = " e ".join(human_clauses)
-    # adiciona info do valor de entrada do usuário se disponível
+    
+    # Adiciona info do valor de entrada do usuário
     input_value = input_values.get(feature_name, None) if feature_name else None
     if input_value is not None:
-        if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO', 'OUTRA_RENDA_VALOR']:
+        if is_money:
             input_str = format_currency(input_value)
         else:
             input_str = str(input_value)
-        return humanized, input_str
+        
+        # Aqui, a saída é construída com um espaço claro
+        return f"{humanized}. Seu valor: {input_str}.", input_str
     else:
         return humanized, None
+
+# def humanize_lime_rule(rule, feature_translations, input_values):
+#     """
+#     Recebe uma string de regra do LIME (ex.: 'ULTIMO_SALARIO <= 3900.0')
+#     e retorna texto humanizado com valores formatados.
+#     """
+#     # traduz nomes de features
+#     # quebra conjunções (LIME costuma retornar expressões simples, mas tratamos & e " and ")
+#     clauses = re.split(r'\s+and\s+|\s*&\s*', rule, flags=re.IGNORECASE)
+#     human_clauses = []
+
+#     for c in clauses:
+#         c = c.strip().strip('()')
+#         # padrões possíveis:
+#         # 1) a < feature <= b  (ex: 0.0 < VALOR <= 185000.0)
+#         m_range = re.match(r'([-+]?\d*\.?\d+)\s*<\s*([A-Za-z_][A-Za-z0-9_]*)\s*<=\s*([-+]?\d*\.?\d+)', c)
+#         m_range2 = re.match(r'([A-Za-z_][A-Za-z0-9_]*)\s*>\s*([-+]?\d*\.?\d+)\s*and\s*([A-Za-z_][A-Za-z0-9_]*)\s*<=\s*([-+]?\d*\.?\d+)', c, flags=re.IGNORECASE)
+#         m_le = re.match(r'([A-Za-z_][A-Za-z0-9_]*)\s*<=\s*([-+]?\d*\.?\d+)', c)
+#         m_ge = re.match(r'([A-Za-z_][A-Za-z0-9_]*)\s*>=\s*([-+]?\d*\.?\d+)', c)
+#         m_gt = re.match(r'([A-Za-z_][A-Za-z0-9_]*)\s*>\s*([-+]?\d*\.?\d+)', c)
+#         m_eq = re.match(r'([A-Za-z_][A-Za-z0-9_]*)\s*==?\s*["\']?([^"\']+)["\']?', c)
+
+#         # detecta feature para decidir formato monetário
+#         feature_name_search = re.search(r'([A-Za-z_][A-Za-z0-9_]*)', c)
+#         feature_name = feature_name_search.group(1) if feature_name_search else None
+#         is_money = feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO', 'OUTRA_RENDA_VALOR']
+
+#         translated = feature_translations.get(feature_name, feature_name if feature_name else c)
+
+#         if m_range:
+#             a, f, b = m_range.group(1), m_range.group(2), m_range.group(3)
+#             human_clauses.append(f"{translated} entre {_format_number_in_rule(a, is_money)} e {_format_number_in_rule(b, is_money)}")
+#         elif m_range2:
+#             # fallback raro - compõe manualmente
+#             _, a, _, b = m_range2.groups()
+#             human_clauses.append(f"{translated} entre {_format_number_in_rule(a, is_money)} e {_format_number_in_rule(b, is_money)}")
+#         elif m_le:
+#             f, val = m_le.group(1), m_le.group(2)
+#             human_clauses.append(f"{translated} igual ou menor que {_format_number_in_rule(val, is_money)}")
+#         elif m_ge:
+#             f, val = m_ge.group(1), m_ge.group(2)
+#             human_clauses.append(f"{translated} igual ou maior que {_format_number_in_rule(val, is_money)}")
+#         elif m_gt:
+#             f, val = m_gt.group(1), m_gt.group(2)
+#             human_clauses.append(f"{translated} maior que {_format_number_in_rule(val, is_money)}")
+#         elif m_eq:
+#             f, val = m_eq.group(1), m_eq.group(2)
+#             human_clauses.append(f"{translated} igual a {val}")
+#         else:
+#             # fallback: substitui números por formatados se existirem
+#             nums = re.findall(r'[-+]?\d*\.?\d+', c)
+#             c_fmt = c
+#             for n in nums:
+#                 c_fmt = c_fmt.replace(n, _format_number_in_rule(n, is_money))
+#             human_clauses.append(c_fmt)
+
+#     humanized = " e ".join(human_clauses)
+#     # adiciona info do valor de entrada do usuário se disponível
+#     input_value = input_values.get(feature_name, None) if feature_name else None
+#     if input_value is not None:
+#         if feature_name in ['VL_IMOVEIS', 'VALOR_TABELA_CARROS', 'ULTIMO_SALARIO', 'OUTRA_RENDA_VALOR']:
+#             input_str = format_currency(input_value)
+#         else:
+#             input_str = str(input_value)
+#         return humanized, input_str
+#     else:
+#         return humanized, None
 
 
 # ------------------ Config UI e mapeamentos ------------------ #

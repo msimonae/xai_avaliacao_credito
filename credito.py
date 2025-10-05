@@ -464,26 +464,49 @@ if st.button("Verificar Crédito"):
     except Exception as e:
         st.warning(f"Não foi possível gerar a explicação Anchor: {e}")
 
-    # ------------------- Feedback do LLM (OpenAI) ------------------- #
+    # ------------------- Feedback do LLM -------------------
     if client:
         prompt = f"""
-Você é um Cientista de Dados Sênior, especialista em explicar resultados de modelos de crédito para clientes de forma clara, empática e direta.
-Importante: As contribuições do SHAP (a seguir) estão em escala numérica do modelo e NÃO representam valores monetários. Os valores monetários aparecem entre parênteses ao lado de cada contribuição.
+Você é um Cientista de Dados Sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
+O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
 
-Resultado previsto: '{resultado_texto}'
-
-SHAP (contribuições numéricas):
+Aqui estão as explicações técnicas sobre os fatores que mais influenciaram essa decisão:
+- **SHAP (Contribuição dos atributos):**
 {exp_rec_shap}
-
-LIME (regras humanizadas):
+- **LIME (Regras de decisão):**
 {exp_rec_lime}
 
-Com base nisso, gere um texto amigável dividido em:
-1) Análise do seu Perfil Financeiro — explique os principais motivos que levaram à decisão (liste bullet points com os fatores SHAP e as regras LIME, explicando em linguagem simples).
-2) Recomendações / Pontos a Melhorar — se o resultado for 'Recusado', dê 2-3 dicas práticas e concretas.
+Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-Formate valores monetários como R$ 1.234.567,89. Seja conciso, empático e evite jargões técnicos.
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão. Mencione os fatores do SHAP e **liste em bullet points** as regras do LIME. Para cada item da lista do LIME, explique em linguagem natural como a condição do fator influenciou o resultado. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+
+2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça 2 ou 3 dicas práticas sobre como o cliente pode melhorar seu perfil.
+
+3.  **Estrutura:** Divida sua resposta em tópicos, como "Análise do seu Perfil Financeiro" e "Recomendações".
+
+Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de palavras. Não inclua informações sobre a explicação do Anchor no seu feedback.Formate valores monetários como R$ 1.234.567,89. Seja conciso, empático e evite jargões técnicos.
 """
+        
+#     # ------------------- Feedback do LLM (OpenAI) ------------------- #
+#     if client:
+#         prompt = f"""
+# Você é um Cientista de Dados Sênior, especialista em explicar resultados de modelos de crédito para clientes de forma clara, empática e direta.
+# Importante: As contribuições do SHAP (a seguir) estão em escala numérica do modelo e NÃO representam valores monetários. Os valores monetários aparecem entre parênteses ao lado de cada contribuição.
+
+# Resultado previsto: '{resultado_texto}'
+
+# SHAP (contribuições numéricas):
+# {exp_rec_shap}
+
+# LIME (regras humanizadas):
+# {exp_rec_lime}
+
+# Com base nisso, gere um texto amigável dividido em:
+# 1) Análise do seu Perfil Financeiro — explique os principais motivos que levaram à decisão (liste bullet points com os fatores SHAP e as regras LIME, explicando em linguagem simples).
+# 2) Recomendações / Pontos a Melhorar — se o resultado for 'Recusado', dê 2-3 dicas práticas e concretas.
+
+# Formate valores monetários como R$ 1.234.567,89. Seja conciso, empático e evite jargões técnicos.
+# """
         try:
             with st.spinner("Gerando feedback personalizado com o LLM..."):
                 resp = client.chat.completions.create(

@@ -245,27 +245,26 @@ if st.button("Verificar Crédito"):
     exp_rec_lime = ""
     exp_rec_anchor = ""
 
-    # ------------------- SHAP (explicador robusto) ------------------- #
+        # ------------------- SHAP -------------------
     try:
-        st.markdown("**Explicação com SHAP (Impacto das Features na probabilidade de aprovação):**")
-        # Explicador que foca na probabilidade da classe 1 (aprovado)
-        # Criação do explainer
-        explainer = shap.Explainer(lr_model, X_train_df, feature_names=feature_names)
-        #explainer = shap.Explainer(lambda x: lr_model.predict_proba(x)[:, 1], X_train_scaled)
-        #shap_values = explainer(X_input_scaled)
-        shap_values = explainer(X_input_df)
-        # waterfall plot
-        fig = plt.figure()
-        # Gráfico Waterfall (com nomes corretos)
-        shap.plots.waterfall(shap_values[0], show=True)
-        #shap.plots.waterfall(shap_values[0], show=False, max_display=10)
-        st.pyplot(fig)
-        plt.close(fig)
+        st.markdown("**Explicação com SHAP (Impacto das Features na Predição Atual):**")
+        explainer = shap.TreeExplainer(lr_model)
+        sv_scaled = explainer(X_input_scaled_df)
 
-        contribs = shap_values[0].values  # array (n_features,)
-        # seleciona top 3 que favorecem ou top 3 que prejudicam a decisão
-        if int(y_pred) == 0:
-            # para recusa: pega menores (mais negativos)
+        sv_plot = shap.Explanation(
+            values=sv_scaled.values[0],
+            base_values=sv_scaled.base_values[0],
+            data=X_input_df.iloc[0].values,
+            feature_names=feature_names
+        )
+
+        fig_waterfall = plt.figure()
+        shap.plots.waterfall(sv_plot, show=False, max_display=10)
+        st.pyplot(fig_waterfall)
+        plt.close(fig_waterfall)
+
+        contribs = sv_scaled.values[0]
+        if y_pred == 0:
             idx = np.argsort(contribs)[:3]
             st.write("**SHAP - Principais fatores que influenciaram a recusa:**")
         else:
@@ -277,21 +276,68 @@ if st.button("Verificar Crédito"):
             feature_name = feature_names[j]
             contrib = contribs[j]
             val = X_input_df.iloc[0, j]
-            # valor de entrada formatado quando for monetário
             if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
                 val_str = format_currency(val)
+                razoes_shap_list.append(f"{feature_name}: contribuição de {contrib:.2f}, com um valor de {val_str}.")
             else:
-                val_str = str(val)
-            razoes_shap_list.append({
-                "feature": feature_name,
-                "contrib": format_shap_contrib(contrib),
-                "valor": val_str
-            })
-            st.markdown(f"- **{feature_name}**: contribuição **{format_shap_contrib(contrib)}**, valor: **{val_str}**")
+                razoes_shap_list.append(f"{feature_name}: contribuição de {contrib:.2f}, com um valor de {val}.")
+            
+        exp_rec_shap = "\n".join(razoes_shap_list)
 
-        exp_rec_shap = "\n".join([f"{r['feature']}: contribuição {r['contrib']}, valor {r['valor']}" for r in razoes_shap_list])
+        for r in razoes_shap_list:
+            st.markdown(f"- {r}")
+
     except Exception as e:
         st.warning(f"Não foi possível gerar SHAP: {e}")
+
+    
+    # # ------------------- SHAP (explicador robusto) ------------------- #
+    # try:
+    #     st.markdown("**Explicação com SHAP (Impacto das Features na probabilidade de aprovação):**")
+    #     # Explicador que foca na probabilidade da classe 1 (aprovado)
+    #     # Criação do explainer
+    #     explainer = shap.Explainer(lr_model, X_train_df, feature_names=feature_names)
+    #     #explainer = shap.Explainer(lambda x: lr_model.predict_proba(x)[:, 1], X_train_scaled)
+    #     #shap_values = explainer(X_input_scaled)
+    #     shap_values = explainer(X_input_df)
+    #     # waterfall plot
+    #     fig = plt.figure()
+    #     # Gráfico Waterfall (com nomes corretos)
+    #     shap.plots.waterfall(shap_values[0], show=True)
+    #     #shap.plots.waterfall(shap_values[0], show=False, max_display=10)
+    #     st.pyplot(fig)
+    #     plt.close(fig)
+
+    #     contribs = shap_values[0].values  # array (n_features,)
+    #     # seleciona top 3 que favorecem ou top 3 que prejudicam a decisão
+    #     if int(y_pred) == 0:
+    #         # para recusa: pega menores (mais negativos)
+    #         idx = np.argsort(contribs)[:3]
+    #         st.write("**SHAP - Principais fatores que influenciaram a recusa:**")
+    #     else:
+    #         idx = np.argsort(contribs)[-3:]
+    #         st.write("**SHAP - Principais fatores que influenciaram a aprovação:**")
+
+    #     razoes_shap_list = []
+    #     for j in idx:
+    #         feature_name = feature_names[j]
+    #         contrib = contribs[j]
+    #         val = X_input_df.iloc[0, j]
+    #         # valor de entrada formatado quando for monetário
+    #         if feature_name in ['VL_IMOVEIS', 'ULTIMO_SALARIO', 'VALOR_TABELA_CARROS', 'OUTRA_RENDA_VALOR']:
+    #             val_str = format_currency(val)
+    #         else:
+    #             val_str = str(val)
+    #         razoes_shap_list.append({
+    #             "feature": feature_name,
+    #             "contrib": format_shap_contrib(contrib),
+    #             "valor": val_str
+    #         })
+    #         st.markdown(f"- **{feature_name}**: contribuição **{format_shap_contrib(contrib)}**, valor: **{val_str}**")
+
+    #     exp_rec_shap = "\n".join([f"{r['feature']}: contribuição {r['contrib']}, valor {r['valor']}" for r in razoes_shap_list])
+    # except Exception as e:
+    #     st.warning(f"Não foi possível gerar SHAP: {e}")
 
     # ------------------- LIME ------------------- #
     try:

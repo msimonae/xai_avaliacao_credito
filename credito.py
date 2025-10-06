@@ -479,7 +479,7 @@ Aqui estão as explicações técnicas sobre os fatores que mais influenciaram e
 
 Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão pelo menos 3 itens. Mencione os fatores do SHAP e todas as regras do LIME e **liste em bullet points**. Para cada item da bullet points do LIME, explique em linguagem natural como a condição do fator influenciou o resultado e o seu limite de aprovação conforme a regra do LIME e mostre uma comparação da sua entrada e o limite de cada item proviniente do bullet point. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+1.  **Análise do Resultado:** De forma amigável e empática, explique os principais motivos que levaram à decisão pelo menos 3 itens. Mencione os fatores do SHAP e todas as regras do LIME e **liste em bullet points**. Para cada item da bullet points do LIME, explique em linguagem natural como a condição do fator influenciou o resultado e o seu limite de aprovação conforme a regra do LIME e mostre uma comparação da sua entrada e o limite de cada item proviniente da regra do LIME. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
 2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, forneça de 3 até 5 dicas práticas sobre como o cliente pode melhorar seu perfil.
 

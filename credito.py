@@ -513,7 +513,7 @@ Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de p
                 resp = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
-                        {"role": "system", "content": "Você é um analista de crédito sênior e especialista em comunicação com clientes."},
+                        {"role": "system", "content": "Você é um Cientista de Dados Sênior e especialista em comunicação com clientes."},
                         {"role": "user", "content": prompt},
                     ],
                     temperature=0.1,

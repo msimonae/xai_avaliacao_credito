@@ -475,7 +475,7 @@ if st.button("Verificar Crédito"):
 Você é um Cientista de Dados Sênior, especialista em explicar os resultados de modelos de Machine Learning para clientes de forma clara, objetiva e humana.
 O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
 
-Aqui estão as explicações técnicas sobre os fatores que mais influenciaram essa decisão:
+Aqui estão as explicações técnicas sobre os fatores que mais influenciaram essa decisão e se for recusado explique os motivos da recuso, mas se for aprovado parabenize o cliente :
 - **SHAP (Contribuição dos atributos):**
 {exp_rec_shap}
 - **LIME (Regras de decisão):**
@@ -489,7 +489,7 @@ Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável pa
 
 3.  **Estrutura:** Divida sua resposta em tópicos, como "Análise do seu Perfil Financeiro" e "Recomendações".
 
-Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de palavras. Não inclua informações sobre a explicação do Anchor no seu feedback.Formate valores monetários como R$ 1.234.567,89. Seja conciso, empático e evite jargões técnicos.
+Seja direto, empático e construtivo. Evite qualquer tipo de concatenação de palavras. Formate valores monetários como R$ 1.234.567,89. Seja conciso, empático e evite jargões técnicos.
 """
         
 #     # ------------------- Feedback do LLM (OpenAI) ------------------- #

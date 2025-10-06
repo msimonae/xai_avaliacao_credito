@@ -476,9 +476,6 @@ Você é um Cientista de Dados Sênior, especialista em explicar os resultados d
 O modelo de análise de crédito previu o resultado '{resultado_texto}' para um cliente.
 
 Aqui estão as explicações técnicas sobre os fatores que mais influenciaram essa decisão:
-
-Se o crédito foi recusado, forneça de 3 até 5 dicas práticas sobre como o cliente pode melhorar seu perfil.
-
 - **SHAP (Contribuição dos atributos):**
 {exp_rec_shap}
 - **LIME (Regras de decisão):**
@@ -486,9 +483,7 @@ Se o crédito foi recusado, forneça de 3 até 5 dicas práticas sobre como o cl
 
 Com base nas informações do **SHAP** e **LIME**, crie um feedback amigável para o cliente, seguindo as instruções abaixo:
 
-1.  **Análise do Resultado:** De forma amigável e empática, explique todas as principais motivos que levaram à decisão. 
-Se o crédito foi recusado, Diga que seu crédito foi recusado e se foi aprovado, parabenize o cliente.
-Mencione todos os fatores do SHAP e todas as regras do LIME e **liste em bullet points**. Para os resultados SHAP o cuidado para não formatar as pontuações das variáveis importantes.Para todos os resultado do LIME, explique em linguagem natural como a condição do fator influenciaram o resultado '{resultado_texto}' e compare com o seu limite da regra do LIME {exp_rec_lime}. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
+1.  **Análise do Resultado:** De forma amigável e empática, explique todas as principais motivos que levaram à decisão. Mencione todos os fatores do SHAP e todas as regras do LIME e **liste em bullet points**. Para os resultados SHAP o cuidado para não formatar as pontuações das variáveis importantes.Para todos os resultado do LIME, explique em linguagem natural como a condição do fator influenciaram o resultado '{resultado_texto}' e compare com o seu limite da regra do LIME {exp_rec_lime}. Formate valores monetários com R$ e use vírgulas e pontos decimais de forma correta (Exemplo: R$ 50.000,00).
 
 2.  **Pontos a Melhorar (se o resultado for 'Recusado')**: Se o crédito foi recusado, Diga que seu crédito foi recusado e forneça 2 ou 3 dicas práticas e acionáveis sobre como o cliente pode melhorar seu perfil para aumentar as chances de aprovação no futuro. Se foi aprovado, parabenize o cliente e apenas reforce os pontos positivos.
 

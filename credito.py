@@ -446,7 +446,7 @@ if st.button("Verificar Crédito"):
 
     # ------------------- Anchor -------------------
     try:
-        st.markdown("**Explicação com Anchor (Regras Mínimas):**")
+        #st.markdown("**Explicação com Anchor (Regras Mínimas):**")
         def predict_fn_anchor(arr2d):
             df = pd.DataFrame(arr2d, columns=feature_names)
             scaled = scaler.transform(df)
@@ -462,8 +462,8 @@ if st.button("Verificar Crédito"):
         )
         
         rule = " E ".join(anchor_exp.names())
-        st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
-        st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
+        #st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
+        #st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
         exp_rec_anchor = f"Regra Anchor: {rule}"
 
     except Exception as e:

@@ -444,8 +444,9 @@ if st.button("Verificar Crédito"):
     except Exception as e:
         st.warning(f"Não foi possível gerar ELI5: {e}")
 
-    # ------------------- Anchor ------------------- #
+    # ------------------- Anchor -------------------
     try:
+        st.markdown("**Explicação com Anchor (Regras Mínimas):**")
         def predict_fn_anchor(arr2d):
             df = pd.DataFrame(arr2d, columns=feature_names)
             scaled = scaler.transform(df)
@@ -459,9 +460,12 @@ if st.button("Verificar Crédito"):
         anchor_exp = anchor_explainer.explain_instance(
             X_input_df.values[0], predict_fn_anchor, threshold=0.95
         )
-
+        
         rule = " E ".join(anchor_exp.names())
+        st.write(f"**Anchor – Regra que ancora a predição:** Se *{rule}*, então o resultado é **{resultado_texto}**.")
+        st.write(f"Precisão da regra: {anchor_exp.precision():.2f} | Cobertura da regra: {anchor_exp.coverage():.2f}")
         exp_rec_anchor = f"Regra Anchor: {rule}"
+
     except Exception as e:
         st.warning(f"Não foi possível gerar a explicação Anchor: {e}")
 
